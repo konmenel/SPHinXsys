@@ -44,8 +44,8 @@ const Real mu_f = 1.0e-3;								/**< Reference dynamic viscocity of fluid [Ns/m
 const Real rho0_s = 2.8e3;								/**< Boulder Density [kg/m^3] from paper. */
 const Real boulder_vol = BL * BH;						/**< Boulder Volume [m^3]. (1.5 x 2.0 x 3.0 cm) */
 const Real boulder_mass = rho0_s * boulder_vol;			/**< Boulder Mass [kg]. */
-const Real poisson = 0.45;//0.25;								/**< Poisson's ratio. */
-const Real Youngs_modulus = 73e3;						/**< Young's modulus [Pa]. */
+const Real poisson = 0.25;								/**< Poisson's ratio. */
+const Real Youngs_modulus = 73e6;						/**< Young's modulus [Pa]. */
 const Real physical_viscosity = 100000.0;
 
 /**
@@ -143,9 +143,10 @@ public:
 		: FluidBody(sph_system, body_name)
 	{
 		/** Geomtry definition. */
+		MultiPolygon multi_polygon;
 		std::vector<Vecd> water_block_shape = CreateWaterBlockShape();
-		body_shape_ = new ComplexShape(body_name);
-		body_shape_->addAPolygon(water_block_shape, ShapeBooleanOps::add);
+		multi_polygon.addAPolygon(water_block_shape, ShapeBooleanOps::add);
+		body_shape_.add<MultiPolygonShape>(multi_polygon);
 	}
 };
 
@@ -156,16 +157,7 @@ public:
 class WaterMaterial : public WeaklyCompressibleFluid
 {
 public:
-	WaterMaterial() : WeaklyCompressibleFluid()
-	{
-		/** Basic material parameters*/
-		rho_0_ = rho0_f;
-		c_0_ = c_f;
-        mu_ = mu_f;
-
-		/** Compute the derived material parameters*/
-		assignDerivedMaterialParameters();
-	}
+		WaterMaterial() : WeaklyCompressibleFluid(rho0_f, c_f, mu_) {}
 };
 
 
@@ -179,30 +171,14 @@ public:
 		: SolidBody(sph_system, body_name)
 	{
 		/** Geomtry definition. */
+		MultiPolygon multi_polygon;
 		std::vector<Vecd> outer_shape = CreateOuterWallShape();
 		std::vector<Vecd> inner_shape = CreateInnerWallShape();
 		std::vector<Vecd> verical_wall_shape = CreateVerWallShape();
-		body_shape_ = new ComplexShape(body_name);
-		body_shape_->addAPolygon(outer_shape, ShapeBooleanOps::add);
-		body_shape_->addAPolygon(inner_shape, ShapeBooleanOps::sub);
-		body_shape_->addAPolygon(verical_wall_shape, ShapeBooleanOps::add);
-	}
-};
+		multi_polygon.addAPolygon(outer_shape, ShapeBooleanOps::add);
+		multi_polygon.addAPolygon(inner_shape, ShapeBooleanOps::sub);
+		body_shape_.add<MultiPolygonShape>(multi_polygon);
 
-/**
- * @brief Define wall material.
- */
-class WallMaterial : public LinearElasticSolid
-{
-public:
-	WallMaterial() : LinearElasticSolid()
-	{
-		rho_0_ = rho0_s;
-		E_0_ = Youngs_modulus;
-		nu_ = poisson;
-		eta_0_ = physical_viscosity;
-
-		assignDerivedMaterialParameters();
 	}
 };
 
@@ -216,9 +192,10 @@ public:
 		: SolidBody(sph_system, body_name)
 	{
 		/** Geomtry definition. */
-		body_shape_ = new ComplexShape(body_name);
+		MultiPolygon multi_polygon;
 		std::vector<Vecd> boulder_shape = CreateBoulderShape();
-		body_shape_->addAPolygon(boulder_shape, ShapeBooleanOps::add);
+		multi_polygon.addAPolygon(boulder_shape, ShapeBooleanOps::add);
+		body_shape_.add<MultiPolygonShape>(multi_polygon);
 	}
 };
 
@@ -228,13 +205,6 @@ public:
 class BoulderMaterial : public LinearElasticSolid
 {
 public:
-	BoulderMaterial() : LinearElasticSolid()
-	{
-		rho_0_ = rho0_s;
-		E_0_ = Youngs_modulus;
-		nu_ = poisson;
-		eta_0_ = physical_viscosity;
+	BoulderMaterial() : LinearElasticSolid(rho0_s, Youngs_modulus, poisson) {}
 
-		assignDerivedMaterialParameters();
-	}
 };

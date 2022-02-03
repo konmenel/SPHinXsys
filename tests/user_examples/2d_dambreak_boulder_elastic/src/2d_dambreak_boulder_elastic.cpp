@@ -20,22 +20,19 @@ int main()
 	/** Define external force.*/
 	Gravity gravity(Vecd(0.0, -gravity_g));
 	/** The water block, body, material and particles container. */
-	WaterBlock *water_block 		= new WaterBlock(system, "WaterBody");
-	WaterMaterial *water_material 	= new WaterMaterial();
-	FluidParticles fluid_particles(water_block, water_material);
+	WaterBlock water_block(system, "WaterBody");
+	FluidParticles fluid_particles(water_block, makeShared<WaterMaterial>());
 	/** The wall boundary, body and particles container. */
-	WallBoundary *wall_boundary 	= new WallBoundary(system, "Wall");
-	WallMaterial *wall_material		= new WallMaterial();
-	SolidParticles wall_particles(wall_boundary, wall_material);
+	WallBoundary wall_boundary(system, "Wall");
+	SolidParticles wall_particles(wall_boundary);
 	/** Boulder system. Body, material and particle container. */
-	Boulder *boulder 					= new Boulder(system, "Boulder");
-	BoulderMaterial* boulder_material = new BoulderMaterial();
-	ElasticSolidParticles boulder_particles(boulder, boulder_material);
+	Boulder boulder(system, "Boulder");
+	ElasticSolidParticles boulder_particles(boulder, makeShared<BoulderMaterial>());
 	/** topology */
-	InnerBodyRelation* boulder_inner 			= new InnerBodyRelation(boulder);
-	ComplexBodyRelation* water_block_complex = new ComplexBodyRelation(water_block, { wall_boundary, boulder });
-	ContactBodyRelation* boulder_fluid_contact 		= new ContactBodyRelation(boulder, { water_block });
-	SolidContactBodyRelation* boulder_wall_contact 		= new SolidContactBodyRelation(boulder, { wall_boundary });
+	BodyRelationInner boulder_inner(boulder);
+	ComplexBodyRelation water_block_complex(water_block, { &wall_boundary, &boulder });
+	BodyRelationContact boulder_fluid_contact(boulder, { &water_block });
+	SolidBodyRelationContact boulder_wall_contact(boulder, { &wall_boundary });
 	/**
 	 * Methods only used only once
 	 */
@@ -45,8 +42,8 @@ int main()
 	 * Methods used for time stepping
 	 */
 	/** Time step initialization, add gravity. */
-	InitializeATimeStep 	initialize_gravity_to_fluid(water_block, &gravity);
-	InitializeATimeStep 	initialize_gravity_to_boulder(boulder, &gravity);
+	TimeStepInitialization 	initialize_gravity_to_fluid(water_block, gravity);
+	TimeStepInitialization 	initialize_gravity_to_boulder(boulder, gravity);
 	/** Evaluation of density by summation approach. */
 	fluid_dynamics::DensitySummationFreeSurfaceComplex update_density_by_summation(water_block_complex);
 	/** time step size without considering sound wave speed. */
@@ -68,7 +65,7 @@ int main()
 	/** Fluid viscous force on boulder. */
 	solid_dynamics::FluidViscousForceOnSolid fluid_viscous_force_on_boulder(boulder_fluid_contact);
 	/** Contact force on boulder. */
-	solid_dynamics::SummationContactDensity boulder_update_contact_density(boulder_wall_contact);
+	solid_dynamics::ContactDensitySummation boulder_update_contact_density(boulder_wall_contact);
 	solid_dynamics::ContactForce contact_force_on_boulder(boulder_wall_contact);
 	/** Damping */
 	DampingWithRandomChoice<DampingPairwiseInner<indexVector, Vec2d>>
@@ -82,20 +79,21 @@ int main()
 	/** Output. */
 	cout << "Output setup... ";
 	In_Output in_output(system);
-	WriteBodyStatesToVtu 		write_real_body_states(in_output, system.real_bodies_);
-	WriteTotalForceOnSolid      write_total_force_on_boulder(in_output, boulder);
+	BodyStatesRecordingToVtp 		write_real_body_states(in_output, system.real_bodies_);
+	RegressionTestDynamicTimeWarping<BodyReducedQuantityRecording<solid_dynamics::TotalForceOnSolid>> 
+		write_total_force_on_boulder(in_output, boulder);
 	cout << "SUCCESS!\n";
 	/**
 	 * @brief Prepare quantities will be used once only and initial condition.
 	 */
 	system.initializeSystemCellLinkedLists();
 	system.initializeSystemConfigurations();
-	wall_particles.initializeNormalDirectionFromGeometry();
-	boulder_particles.initializeNormalDirectionFromGeometry();
+	wall_particles.initializeNormalDirectionFromBodyShape();
+	boulder_particles.initializeNormalDirectionFromBodyShape();
 	boulder_corrected_configuration.parallel_exec();
 
-	write_real_body_states.WriteToFile(GlobalStaticVariables::physical_time_);
-	write_total_force_on_boulder.WriteToFile(GlobalStaticVariables::physical_time_);
+	write_real_body_states.writeToFile(GlobalStaticVariables::physical_time_);
+	write_total_force_on_boulder.writeToFile(GlobalStaticVariables::physical_time_);
 	/** Simulation start here. */
 	/** starting time zero. */
 	system.restart_step_ = 0;
@@ -103,7 +101,7 @@ int main()
 	int number_of_iterations = 0;
 	int screen_output_interval = 500;
 	Real End_Time = 2.0;					/**< End time. */
-	Real D_Time = End_Time / 1200.0;		/**< Time stamps for output of body states. */
+	Real D_Time = End_Time / 2400.0;		/**< Time stamps for output of body states. */
 	Real Dt = 0.0;							/**< Default advection time step sizes. */
 	Real dt = 0.0; 							/**< Default acoustic time step sizes. */
 	Real dt_s = 0.0;						/**< Default acoustic time step sizes for solid. */
@@ -114,7 +112,7 @@ int main()
 	tick_count t1 = tick_count::now();
 	tick_count::interval_t interval;
 	/** Main Loop. */
-	write_real_body_states.WriteToFile(GlobalStaticVariables::physical_time_);
+	write_real_body_states.writeToFile(0);
 	while (GlobalStaticVariables::physical_time_ < End_Time){
 		Real integral_time = 0.0;
 		
@@ -170,17 +168,17 @@ int main()
 					 << "	Dt = " << Dt << "	dt = " << dt << "\n";
 			}
 			number_of_iterations++;
-			water_block->updateCellLinkedList();
-			wall_boundary->updateCellLinkedList();
-			boulder->updateCellLinkedList();
-			water_block_complex->updateConfiguration();
-			boulder_fluid_contact->updateConfiguration();
-			boulder_wall_contact->updateConfiguration();
-			write_total_force_on_boulder.WriteToFile(GlobalStaticVariables::physical_time_);
+			water_block.updateCellLinkedList();
+			wall_boundary.updateCellLinkedList();
+			boulder.updateCellLinkedList();
+			water_block_complex.updateConfiguration();
+			boulder_fluid_contact.updateConfiguration();
+			boulder_wall_contact.updateConfiguration();
+			write_total_force_on_boulder.writeToFile(number_of_iterations);
 		}
 
 		tick_count t2 = tick_count::now();
-		write_real_body_states.WriteToFile(GlobalStaticVariables::physical_time_ / (D_Time * 1e4));
+		write_real_body_states.writeToFile(number_of_iterations);
 		tick_count t3 = tick_count::now();
 		interval += t3 - t2;
 	}
