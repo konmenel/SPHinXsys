@@ -29,7 +29,7 @@ int main()
 	FluidParticles fluid_particles(water_block, makeShared<WaterMaterial>());
 	/** The wall boundary, body and particles container. */
 	WallBoundary wall_boundary(system, "Wall");
-	SolidParticles wall_particles(wall_boundary, makeShared<WallMaterial>());
+	SolidParticles wall_particles(wall_boundary);
 	/** Boulder system. Body, material and particle container. */
 	Boulder boulder(system, "Boulder");
 	ElasticSolidParticles boulder_particles(boulder, makeShared<BoulderMaterial>());
@@ -213,7 +213,7 @@ int main()
 				contact_force_on_boulder.parallel_exec();
 				fluid_pressure_force_on_boulder.parallel_exec(dt);
 				fluid_viscous_force_on_boulder.parallel_exec(dt);
-				// boulder_damping.parallel_exec(dt);
+				boulder_damping.parallel_exec(dt);
 				density_relaxation.parallel_exec(dt);
 				/** solid dynamics. */
 				average_velocity_and_acceleration.initialize_displacement_.parallel_exec();
@@ -256,7 +256,7 @@ int main()
 		}
 
 		tick_count t2 = tick_count::now();
-		write_real_body_states.writeToFile(GlobalStaticVariables::physical_time_ / (D_Time * 1e4));
+		write_real_body_states.writeToFile(number_of_iterations);
 		tick_count t3 = tick_count::now();
 		interval += t3 - t2;
 	}

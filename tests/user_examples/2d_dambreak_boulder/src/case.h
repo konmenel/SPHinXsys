@@ -191,6 +191,8 @@ public:
 	WallMaterial() : LinearElasticSolid(rho0_s, Youngs_modulus, poisson) 
 	{
 		K0_ = rho0_f * c_f * c_f;
+		setSoundSpeeds();
+		setContactStiffness(c0_);
 	}
 };
 
@@ -203,8 +205,8 @@ public:
 	Boulder(SPHSystem &sph_system, string body_name)
 		: SolidBody(sph_system, body_name)
 	{
-		MultiPolygon multi_polygon;
 		/** Geomtry definition. */
+		MultiPolygon multi_polygon;
 		std::vector<Vecd> boulder_shape = CreateBoulderShape();
 		multi_polygon.addAPolygon(boulder_shape, ShapeBooleanOps::add);
 		body_shape_.add<MultiPolygonShape>(multi_polygon);
@@ -221,6 +223,8 @@ public:
 	{
 		std::cout << "Bulk modulus = " << K0_*1e-9 << "GPa\n";
 		K0_ = rho0_f * c_f * c_f;
+		setSoundSpeeds();
+		setContactStiffness(c0_);
 		std::cout << "Bulk modulus = " << K0_*1e-9 << "GPa\n";
 	}
 };
