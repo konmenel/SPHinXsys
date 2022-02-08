@@ -34,14 +34,10 @@ int main()
 	Boulder boulder(system, "Boulder");
 	ElasticSolidParticles boulder_particles(boulder, makeShared<BoulderMaterial>());
 	/** topology */
-	// InnerBodyRelation* water_block_inner 	= new InnerBodyRelation(water_block);
 	BodyRelationInner boulder_inner(boulder);
 	ComplexBodyRelation water_block_complex(water_block, { &wall_boundary, &boulder });
 	BodyRelationContact boulder_fluid_contact(boulder, { &water_block });
 	SolidBodyRelationContact boulder_wall_contact(boulder, { &wall_boundary });
-	// ComplexBodyRelation* boulder_wall_complex = new ComplexBodyRelation(boulder, { wall_boundary });
-	// ContactBodyRelation* observer_contact_with_water = new ContactBodyRelation(observer, { water_block });
-	// ContactBodyRelation* observer_contact_with_flap  = new ContactBodyRelation(observer, {flap});
 	/**
 	 * Methods only used only once
 	 */
@@ -69,12 +65,11 @@ int main()
 	solid_dynamics::FluidViscousForceOnSolid fluid_viscous_force_on_boulder(boulder_fluid_contact);
 	/** Contact force on boulder. */
 	solid_dynamics::ContactDensitySummation boulder_update_contact_density(boulder_wall_contact);
-	solid_dynamics::ContactForce contact_force_on_boulder(boulder_wall_contact);
+	// solid_dynamics::ContactForce contact_force_on_boulder(boulder_wall_contact);
+	solid_dynamics::ContactForceWithWall contact_force_on_boulder(boulder_wall_contact);
 	/** Damping*/
-	DampingWithRandomChoice<DampingPairwiseInner<indexVector, Vec2d>>
-		boulder_damping(boulder_inner, 0.5, "Velocity", physical_viscosity);
-	// solid_dynamics::ContactForceFromFriction friction_force_on_boulder(
-	// 	boulder_wall_contact, boulder->base_particles_->vel_n_, Real(0.2));
+	// DampingWithRandomChoice<DampingPairwiseInner<indexVector, Vec2d>>
+	// 	boulder_damping(boulder_inner, 0.5, "Velocity", physical_viscosity);
 	/** average velocity for boulder. */
 	solid_dynamics::AverageVelocityAndAcceleration	average_velocity_and_acceleration(boulder);
 	solid_dynamics::UpdateElasticNormalDirection 	boulder_update_normal(boulder);
@@ -142,25 +137,19 @@ int main()
 	/** Output. */
 	cout << "Output setup... ";
 	In_Output in_output(system);
+	fluid_particles.addAVariableToWrite<indexScalar, Real>("Density");
+	boulder_particles.addAVariableToWrite<indexScalar, Real>("Density");
+	fluid_particles.addAVariableToWrite<indexScalar, Real>("Volume");
+	boulder_particles.addAVariableToWrite<indexScalar, Real>("Volume");
+	fluid_particles.addAVariableToWrite<indexScalar, Real>("Pressure");
 	BodyStatesRecordingToVtp 		write_real_body_states(in_output, system.real_bodies_);
 	RegressionTestDynamicTimeWarping<BodyReducedQuantityRecording<solid_dynamics::TotalForceOnSolid>> 
 		write_total_force_on_boulder(in_output, boulder);
-	// WriteSimBodyPinData			write_flap_pin_data(in_output, integ, boulder_body);
-	/** WaveProbe 1. */
-	// WriteFreeSurfaceElevation 	wave_probe_4(in_output, water_block,  new WaveProbeBufferNo4(water_block, "WaveProbe_04"));
-	// WriteFreeSurfaceElevation 	wave_probe_5(in_output, water_block,  new WaveProbeBufferNo5(water_block, "WaveProbe_05"));
-	// WriteFreeSurfaceElevation 	wave_probe_12(in_output, water_block, new WaveProbeBufferNo12(water_block, "WaveProbe_12"));
-	/** Pressure probe. */
-	// WriteAnObservedQuantity<indexScalar, Real> pressure_probe("Pressure", in_output, observer_contact_with_water);
-	/** Interpolate the particle position in flap to move the observer accordingly. */
-	// observer_dynamics::InterpolatingAQuantity<indexVector, Vecd>
-	// 	interpolation_observer_position(observer_contact_with_flap, "Position", "Position");
 	cout << "SUCCESS!\n";
 	/**
 	 * @brief Prepare quantities will be used once only and initial condition.
 	 */
 	/** offset particle position */
-	// flap_particles.offsetInitialParticlePosition(offset);
 	system.initializeSystemCellLinkedLists();
 	system.initializeSystemConfigurations();
 	wall_particles.initializeNormalDirectionFromBodyShape();
@@ -168,23 +157,18 @@ int main()
 	boulder_corrected_configuration.parallel_exec();
 	// BoulderInitialCondition boulder_initial_vel(boulder);
 	// boulder_initial_vel.parallel_exec();
-	// boulder_body.setOneU(state, 2, 1.0);
+	boulder_body.setOneU(state, 2, 1.0);
 
 	write_real_body_states.writeToFile(0);
 	write_total_force_on_boulder.writeToFile(0);
-	// write_flap_pin_data.WriteToFile(GlobalStaticVariables::physical_time_);
-	// wave_probe_4.WriteToFile(GlobalStaticVariables::physical_time_);
-	// wave_probe_5.WriteToFile(GlobalStaticVariables::physical_time_);
-	// wave_probe_12.WriteToFile(GlobalStaticVariables::physical_time_);
-	// pressure_probe.WriteToFile(GlobalStaticVariables::physical_time_);
 	/** Simulation start here. */
 	/** starting time zero. */
 	system.restart_step_ = 0;
 	GlobalStaticVariables::physical_time_ = 0.0;
 	int number_of_iterations = 0;
 	int screen_output_interval = 500;
-	Real End_Time = 2.0;					/**< End time. */
-	Real D_Time = End_Time / 2000.0;		/**< Time stamps for output of body states. */
+	Real End_Time = 1.0;					/**< End time. */
+	Real D_Time = End_Time / 1500.0;		/**< Time stamps for output of body states. */
 	Real Dt = 0.0;							/**< Default advection time step sizes. */
 	Real dt = 0.0; 							/**< Default acoustic time step sizes. */
 	Real total_time = 0.0;
@@ -194,7 +178,6 @@ int main()
 	/** Main Loop. */
 	write_real_body_states.writeToFile(GlobalStaticVariables::physical_time_);
 	while (GlobalStaticVariables::physical_time_ < End_Time){
-		// cout << "Iteration " << number_of_iterations << "\n";
 		Real integral_time = 0.0;
 		while (integral_time < D_Time) {
 			/** Acceleration due to viscous force and gravity. */
@@ -211,19 +194,14 @@ int main()
 				pressure_relaxation.parallel_exec(dt);
 				boulder_update_contact_density.parallel_exec();
 				contact_force_on_boulder.parallel_exec();
+				// boulder_damping.parallel_exec(dt);
 				fluid_pressure_force_on_boulder.parallel_exec(dt);
 				fluid_viscous_force_on_boulder.parallel_exec(dt);
-				boulder_damping.parallel_exec(dt);
 				density_relaxation.parallel_exec(dt);
 				/** solid dynamics. */
 				average_velocity_and_acceleration.initialize_displacement_.parallel_exec();
 
 				SimTK::State& state_for_update = integ.updAdvancedState();
-				// Real angle = boulder_body
-				// 				.getBodyRotation(state_for_update)
-				// 				.convertOneAxisRotationToOneAngle(SimTK::ZAxis);
-				
-				// Real angle = boulder_body.getAngle(state_for_update); 	// for SimTK::MobilizedBody::Pin
 				force_on_bodies.clearAllBodyForces(state_for_update);
 				force_on_bodies.setOneBodyForce(state_for_update, boulder_body, 
 												force_on_boulder.parallel_exec());

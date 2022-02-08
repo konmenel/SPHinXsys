@@ -42,11 +42,11 @@ const Real mu_f = 1.0e-3;								/**< Reference dynamic viscocity of fluid [Ns/m
  * @brief Material properties of the solid.
  */
 const Real rho0_s = 2.8e3;								/**< Boulder Density [kg/m^3] from paper. */
-const Real boulder_vol = BL * BH;						/**< Boulder Volume [m^3]. (1.5 x 2.0 x 3.0 cm) */
-const Real boulder_mass = rho0_s * boulder_vol;			/**< Boulder Mass [kg]. */
-const Real poisson = 0.25;								/**< Poisson's ratio. */
-const Real Youngs_modulus = 73e9;						/**< Young's modulus [Pa]. */
-const Real physical_viscosity = 1e6;
+const Real boulder_vol = BL * BH;						/**< Boulder Volume [m^2]. (1.5 x 2.0 x 3.0 cm) */
+const Real boulder_mass = rho0_s * boulder_vol;			/**< Boulder Mass [kg/m]. */
+const Real poisson = 0.3;								/**< Poisson's ratio. */
+const Real Youngs_modulus = 73e7;						/**< Young's modulus [Pa]. */
+const Real physical_viscosity = 1e5;
 
 /**
 * @brief 	Create a water block shape.
@@ -119,21 +119,6 @@ std::vector<Vecd> CreateBoulderShape()
 }
 
 /**
-* @brief create a damping zone
-*/
-// std::vector<Vecd> CreatDampingBufferShape()
-// {
-// 	std::vector<Vecd> pnts;
-// 	pnts.push_back(Vecd(DL - 5.0,  0.356 - BW));
-//     pnts.push_back(Vecd(DL - 5.0,  DH));
-//     pnts.push_back(Vecd(DL + BW,   DH));
-//     pnts.push_back(Vecd(DL + BW,   0.356 - BW));
-//     pnts.push_back(Vecd(DL - 5.0,  0.356 - BW));
-
-// 	return pnts;
-// }
-
-/**
 * @brief 	Fluid body definition.
 */
 class WaterBlock : public FluidBody
@@ -185,16 +170,16 @@ public:
 /**
  * @brief Define wall material.
  */
-class WallMaterial : public LinearElasticSolid
-{
-public:
-	WallMaterial() : LinearElasticSolid(rho0_s, Youngs_modulus, poisson) 
-	{
-		K0_ = rho0_f * c_f * c_f;
-		setSoundSpeeds();
-		setContactStiffness(c0_);
-	}
-};
+// class WallMaterial : public LinearElasticSolid
+// {
+// public:
+// 	WallMaterial() : LinearElasticSolid(rho0_s, Youngs_modulus, poisson) 
+// 	{
+// 		K0_ = rho0_f * c_f * c_f;
+// 		setSoundSpeeds();
+// 		setContactStiffness(c0_);
+// 	}
+// };
 
 /**
  * @brief 	Boulder body definition.
@@ -221,11 +206,11 @@ class BoulderMaterial : public LinearElasticSolid
 public:
 	BoulderMaterial() : LinearElasticSolid(rho0_s, Youngs_modulus, poisson) 
 	{
-		std::cout << "Bulk modulus = " << K0_*1e-9 << "GPa\n";
-		K0_ = rho0_f * c_f * c_f;
-		setSoundSpeeds();
-		setContactStiffness(c0_);
-		std::cout << "Bulk modulus = " << K0_*1e-9 << "GPa\n";
+	// 	std::cout << "Bulk modulus = " << K0_*1e-9 << "GPa\n";
+	// 	K0_ = rho0_f * c_f * c_f;
+	// 	setSoundSpeeds();
+	// 	setContactStiffness(c0_);
+	// 	std::cout << "Bulk modulus = " << K0_*1e-9 << "GPa\n";
 	}
 };
 
@@ -268,17 +253,4 @@ public:
 // 	{
 // 		vel_n_[index_i] = Vec2d(0.0, 1.0);
 // 	};
-// };
-
-/**
- * @brief 	Fluid observer body definition.
- */
-// class FluidObserver : public FictitiousBody
-// {
-// public:
-// 	FluidObserver(SPHSystem &sph_system, string body_name)
-// 		: FictitiousBody(sph_system, body_name)
-// 	{
-// 		body_input_points_volumes_.push_back(make_pair(Vecd(DL, 0.2), 0.0));
-// 	}
 // };

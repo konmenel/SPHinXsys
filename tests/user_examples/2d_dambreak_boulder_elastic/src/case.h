@@ -45,7 +45,7 @@ const Real rho0_s = 2.8e3;								/**< Boulder Density [kg/m^3] from paper. */
 const Real boulder_vol = BL * BH;						/**< Boulder Volume [m^3]. (1.5 x 2.0 x 3.0 cm) */
 const Real boulder_mass = rho0_s * boulder_vol;			/**< Boulder Mass [kg]. */
 const Real poisson = 0.25;								/**< Poisson's ratio. */
-const Real Youngs_modulus = 73e6;						/**< Young's modulus [Pa]. */
+const Real Youngs_modulus = 73e5;						/**< Young's modulus [Pa]. */
 const Real physical_viscosity = 100000.0;
 
 /**
@@ -117,21 +117,6 @@ std::vector<Vecd> CreateBoulderShape()
 	boulder.push_back(Vecd(B_x - BL, B_y));
 	return boulder;
 }
-
-/**
-* @brief create a damping zone
-*/
-// std::vector<Vecd> CreatDampingBufferShape()
-// {
-// 	std::vector<Vecd> pnts;
-// 	pnts.push_back(Vecd(DL - 5.0,  0.356 - BW));
-//     pnts.push_back(Vecd(DL - 5.0,  DH));
-//     pnts.push_back(Vecd(DL + BW,   DH));
-//     pnts.push_back(Vecd(DL + BW,   0.356 - BW));
-//     pnts.push_back(Vecd(DL - 5.0,  0.356 - BW));
-
-// 	return pnts;
-// }
 
 /**
 * @brief 	Fluid body definition.

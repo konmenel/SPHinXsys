@@ -66,12 +66,11 @@ int main()
 	solid_dynamics::FluidViscousForceOnSolid fluid_viscous_force_on_boulder(boulder_fluid_contact);
 	/** Contact force on boulder. */
 	solid_dynamics::ContactDensitySummation boulder_update_contact_density(boulder_wall_contact);
-	solid_dynamics::ContactForce contact_force_on_boulder(boulder_wall_contact);
+	// solid_dynamics::ContactForce contact_force_on_boulder(boulder_wall_contact);
+	solid_dynamics::ContactForceWithWall contact_force_on_boulder(boulder_wall_contact);
 	/** Damping */
 	DampingWithRandomChoice<DampingPairwiseInner<indexVector, Vec2d>>
 		boulder_damping(boulder_inner, 0.5, "Velocity", physical_viscosity);
-	// solid_dynamics::ContactForceFromFriction friction_force_on_boulder(
-	// 	boulder_wall_contact, boulder->base_particles_->vel_n_, Real(0.2));
 	/** average velocity for boulder. */
 	solid_dynamics::AverageVelocityAndAcceleration	average_velocity_and_acceleration(boulder);
 	solid_dynamics::UpdateElasticNormalDirection 	boulder_update_normal(boulder);
@@ -101,7 +100,7 @@ int main()
 	int number_of_iterations = 0;
 	int screen_output_interval = 500;
 	Real End_Time = 2.0;					/**< End time. */
-	Real D_Time = End_Time / 2400.0;		/**< Time stamps for output of body states. */
+	Real D_Time = End_Time / 1200.0;		/**< Time stamps for output of body states. */
 	Real Dt = 0.0;							/**< Default advection time step sizes. */
 	Real dt = 0.0; 							/**< Default acoustic time step sizes. */
 	Real dt_s = 0.0;						/**< Default acoustic time step sizes for solid. */
