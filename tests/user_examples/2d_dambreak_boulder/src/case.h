@@ -168,20 +168,6 @@ public:
 };
 
 /**
- * @brief Define wall material.
- */
-// class WallMaterial : public LinearElasticSolid
-// {
-// public:
-// 	WallMaterial() : LinearElasticSolid(rho0_s, Youngs_modulus, poisson) 
-// 	{
-// 		K0_ = rho0_f * c_f * c_f;
-// 		setSoundSpeeds();
-// 		setContactStiffness(c0_);
-// 	}
-// };
-
-/**
  * @brief 	Boulder body definition.
  */
 class Boulder : public SolidBody

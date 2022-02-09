@@ -60,9 +60,7 @@ int main()
 	/** Computing viscous acceleration. */
 	fluid_dynamics::ViscousAccelerationWithWall viscous_acceleration(water_block_complex);
 	/** Fluid force on boulder. */
-	solid_dynamics::FluidPressureForceOnSolid fluid_pressure_force_on_boulder(boulder_fluid_contact);
-	/** Fluid viscous force on boulder. */
-	solid_dynamics::FluidViscousForceOnSolid fluid_viscous_force_on_boulder(boulder_fluid_contact);
+	solid_dynamics::FluidForceOnSolidUpdate 	fluid_force_on_boulder(boulder_fluid_contact);
 	/** Contact force on boulder. */
 	solid_dynamics::ContactDensitySummation boulder_update_contact_density(boulder_wall_contact);
 	// solid_dynamics::ContactForce contact_force_on_boulder(boulder_wall_contact);
@@ -145,6 +143,8 @@ int main()
 	BodyStatesRecordingToVtp 		write_real_body_states(in_output, system.real_bodies_);
 	RegressionTestDynamicTimeWarping<BodyReducedQuantityRecording<solid_dynamics::TotalForceOnSolid>> 
 		write_total_force_on_boulder(in_output, boulder);
+	RegressionTestDynamicTimeWarping<BodyReducedQuantityRecording<solid_dynamics::TotalViscousForceOnSolid>> 
+		write_total_viscous_force_on_boulder(in_output, boulder);
 	cout << "SUCCESS!\n";
 	/**
 	 * @brief Prepare quantities will be used once only and initial condition.
@@ -186,6 +186,7 @@ int main()
 			Dt = get_fluid_advection_time_step_size.parallel_exec();
 			update_density_by_summation.parallel_exec();
 			viscous_acceleration.parallel_exec();
+			fluid_force_on_boulder.viscous_force_.parallel_exec();
 			boulder_update_normal.parallel_exec();
 			
 			/** Dynamics including pressure relaxation. */
@@ -195,8 +196,7 @@ int main()
 				boulder_update_contact_density.parallel_exec();
 				contact_force_on_boulder.parallel_exec();
 				// boulder_damping.parallel_exec(dt);
-				fluid_pressure_force_on_boulder.parallel_exec(dt);
-				fluid_viscous_force_on_boulder.parallel_exec(dt);
+				// fluid_force_on_boulder.parallel_exec();
 				density_relaxation.parallel_exec(dt);
 				/** solid dynamics. */
 				average_velocity_and_acceleration.initialize_displacement_.parallel_exec();
@@ -231,6 +231,7 @@ int main()
 			boulder_fluid_contact.updateConfiguration();
 			boulder_wall_contact.updateConfiguration();
 			write_total_force_on_boulder.writeToFile(GlobalStaticVariables::physical_time_);
+			write_total_viscous_force_on_boulder.writeToFile(GlobalStaticVariables::physical_time_);
 		}
 
 		tick_count t2 = tick_count::now();
