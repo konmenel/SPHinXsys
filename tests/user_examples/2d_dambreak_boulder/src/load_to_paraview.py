@@ -6,6 +6,8 @@ from paraview.simple import *
 
 
 PATH = Path(os.getenv('HOME')) / "SPHinXsys-build"/"tests"/"user_examples"/"2d_dambreak_boulder"
+PARTICLE_RADIUS = 0.00013 / 2.
+
 if sys.platform.startswith('linux'):
     PATH = str(PATH) + "/bin/output/"
 else:
@@ -14,11 +16,11 @@ else:
 
 def open_files():
     wall_re = re.compile(r'SPHBody_Wall_[0-9.]+.vtp$')
-    boulder_re = re.compile(r'SPHBody_Boulder_[0-9.]+.vtp$')
     water_re = re.compile(r'SPHBody_WaterBody_[0-9.]+.vtp$')
+    boulder_re = re.compile(r'SPHBody_Boulder_[0-9.]+.vtp$')
     wall_files = []
-    boulder_files = []
     water_files = []
+    boulder_files = []
     
     files = os.listdir(PATH)
     for name in files:
@@ -34,12 +36,11 @@ def open_files():
         list_.sort(key=lambda x: int(num_re.findall(x)[0]))
 
     return (OpenDataFile(wall_files), OpenDataFile(boulder_files),
-            OpenDataFile(water_files), max((len(water_files)), len(boulder_files)))
+            OpenDataFile(water_files),
+            max((len(water_files)), len(boulder_files)))
 
 
 ResetSession()
-# for x in GetSources().values():
-#     Delete(x[0])
 
 view = GetActiveView()
 wall, boulder, water, number_of_files = open_files()
@@ -56,7 +57,7 @@ water_disp = GetDisplayProperties(water, view)
 
 for disp in (wall_disp, boulder_disp, water_disp):
     disp.SetRepresentationType('Point Gaussian')
-    disp.GaussianRadius = 0.0013
+    disp.GaussianRadius = PARTICLE_RADIUS
 
 boulder_disp.DiffuseColor = [0.67, 0.33, 0.0]
 

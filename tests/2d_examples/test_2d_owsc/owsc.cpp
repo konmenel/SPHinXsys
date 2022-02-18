@@ -153,6 +153,7 @@ int main()
 	In_Output in_output(system);
 	BodyStatesRecordingToVtp 		write_real_body_states(in_output, system.real_bodies_);
 	RegressionTestDynamicTimeWarping<BodyReducedQuantityRecording<solid_dynamics::TotalForceOnSolid>> write_total_force_on_flap(in_output, flap);
+	RegressionTestDynamicTimeWarping<BodyReducedQuantityRecording<solid_dynamics::TotalViscousForceOnSolid>> write_viscous_force_on_flap(in_output, flap);
 	WriteSimBodyPinData			write_flap_pin_data(in_output, integ, pin_spot);
 	/** WaveProbes. */
 	MultiPolygonShape wave_probe_buffer_no_4_shape(createWaveProbeShape4());
@@ -187,6 +188,7 @@ int main()
 
 	write_real_body_states.writeToFile(0);
 	write_total_force_on_flap.writeToFile(0);
+	write_viscous_force_on_flap.writeToFile(0);
 	write_flap_pin_data.writeToFile(0);
 	wave_probe_4.writeToFile(0);
 	wave_probe_5.writeToFile(0);
@@ -267,6 +269,7 @@ int main()
 			if(total_time >= relax_time)
 			{
 				write_total_force_on_flap.writeToFile(number_of_iterations);
+				write_viscous_force_on_flap.writeToFile(number_of_iterations);
 				write_flap_pin_data.writeToFile(GlobalStaticVariables::physical_time_ );
 				wave_probe_4.writeToFile(number_of_iterations);
 				wave_probe_5.writeToFile(number_of_iterations);

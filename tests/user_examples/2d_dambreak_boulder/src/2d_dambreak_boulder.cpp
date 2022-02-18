@@ -33,11 +33,16 @@ int main()
 	/** Boulder system. Body, material and particle container. */
 	Boulder boulder(system, "Boulder");
 	ElasticSolidParticles boulder_particles(boulder, makeShared<BoulderMaterial>());
+	/** Pressure probe on Flap. */
+	ObserverBody observer(system, "BoulderObserver");
+	ObserverParticles 	observer_particles(observer, makeShared<BoulderObserverParticleGenerator>());
 	/** topology */
 	BodyRelationInner boulder_inner(boulder);
 	ComplexBodyRelation water_block_complex(water_block, { &wall_boundary, &boulder });
 	BodyRelationContact boulder_fluid_contact(boulder, { &water_block });
 	SolidBodyRelationContact boulder_wall_contact(boulder, { &wall_boundary });
+	BodyRelationContact observer_contact_with_water(observer, { &water_block });
+	BodyRelationContact observer_contact_with_boulder(observer, {&boulder});
 	/**
 	 * Methods only used only once
 	 */
@@ -141,10 +146,16 @@ int main()
 	boulder_particles.addAVariableToWrite<indexScalar, Real>("Volume");
 	fluid_particles.addAVariableToWrite<indexScalar, Real>("Pressure");
 	BodyStatesRecordingToVtp 		write_real_body_states(in_output, system.real_bodies_);
-	RegressionTestDynamicTimeWarping<BodyReducedQuantityRecording<solid_dynamics::TotalForceOnSolid>> 
+	BodyStatesRecordingToVtp 		write_fictitious_body_states(in_output, system.fictitious_bodies_);
+	BodyReducedQuantityRecording<solid_dynamics::TotalForceOnSolid>
 		write_total_force_on_boulder(in_output, boulder);
-	RegressionTestDynamicTimeWarping<BodyReducedQuantityRecording<solid_dynamics::TotalViscousForceOnSolid>> 
+	BodyReducedQuantityRecording<solid_dynamics::TotalViscousForceOnSolid>
 		write_total_viscous_force_on_boulder(in_output, boulder);
+	/** Pressure probe. */
+	ObservedQuantityRecording<indexScalar, Real> pressure_probe("Pressure", in_output, observer_contact_with_water);
+	/** Interpolate the particle position in flap to move the observer accordingly. */
+	observer_dynamics::InterpolatingAQuantity<indexVector, Vecd>
+		interpolation_observer_position(observer_contact_with_boulder, "Position", "Position");
 	cout << "SUCCESS!\n";
 	/**
 	 * @brief Prepare quantities will be used once only and initial condition.
@@ -155,12 +166,12 @@ int main()
 	wall_particles.initializeNormalDirectionFromBodyShape();
 	boulder_particles.initializeNormalDirectionFromBodyShape();
 	boulder_corrected_configuration.parallel_exec();
-	// BoulderInitialCondition boulder_initial_vel(boulder);
-	// boulder_initial_vel.parallel_exec();
-	boulder_body.setOneU(state, 2, 1.0);
 
 	write_real_body_states.writeToFile(0);
+	write_fictitious_body_states.writeToFile(0);
 	write_total_force_on_boulder.writeToFile(0);
+	write_total_viscous_force_on_boulder.writeToFile(0);
+	pressure_probe.writeToFile(0);
 	/** Simulation start here. */
 	/** starting time zero. */
 	system.restart_step_ = 0;
@@ -168,7 +179,7 @@ int main()
 	int number_of_iterations = 0;
 	int screen_output_interval = 500;
 	Real End_Time = 1.0;					/**< End time. */
-	Real D_Time = End_Time / 1500.0;		/**< Time stamps for output of body states. */
+	Real D_Time = End_Time / 2000.0;		/**< Time stamps for output of body states. */
 	Real Dt = 0.0;							/**< Default advection time step sizes. */
 	Real dt = 0.0; 							/**< Default acoustic time step sizes. */
 	Real total_time = 0.0;
@@ -176,7 +187,6 @@ int main()
 	tick_count t1 = tick_count::now();
 	tick_count::interval_t interval;
 	/** Main Loop. */
-	write_real_body_states.writeToFile(GlobalStaticVariables::physical_time_);
 	while (GlobalStaticVariables::physical_time_ < End_Time){
 		Real integral_time = 0.0;
 		while (integral_time < D_Time) {
@@ -196,7 +206,7 @@ int main()
 				boulder_update_contact_density.parallel_exec();
 				contact_force_on_boulder.parallel_exec();
 				// boulder_damping.parallel_exec(dt);
-				// fluid_force_on_boulder.parallel_exec();
+				fluid_force_on_boulder.parallel_exec();
 				density_relaxation.parallel_exec(dt);
 				/** solid dynamics. */
 				average_velocity_and_acceleration.initialize_displacement_.parallel_exec();
@@ -209,6 +219,7 @@ int main()
 				constraint_boulder.parallel_exec();
 				
 				average_velocity_and_acceleration.update_averages_.parallel_exec(dt);
+				interpolation_observer_position.parallel_exec();
 
 				dt = get_fluid_time_step_size.parallel_exec();
 				relaxation_time += dt;
@@ -230,12 +241,15 @@ int main()
 			water_block_complex.updateConfiguration();
 			boulder_fluid_contact.updateConfiguration();
 			boulder_wall_contact.updateConfiguration();
+			observer_contact_with_water.updateConfiguration();
 			write_total_force_on_boulder.writeToFile(GlobalStaticVariables::physical_time_);
 			write_total_viscous_force_on_boulder.writeToFile(GlobalStaticVariables::physical_time_);
+			pressure_probe.writeToFile(GlobalStaticVariables::physical_time_);
 		}
 
 		tick_count t2 = tick_count::now();
 		write_real_body_states.writeToFile(number_of_iterations);
+		write_fictitious_body_states.writeToFile(number_of_iterations);
 		tick_count t3 = tick_count::now();
 		interval += t3 - t2;
 	}
