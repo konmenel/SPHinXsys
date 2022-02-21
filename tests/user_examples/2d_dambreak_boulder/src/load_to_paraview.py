@@ -6,7 +6,7 @@ from paraview.simple import *
 
 
 PATH = Path(os.getenv('HOME')) / "SPHinXsys-build"/"tests"/"user_examples"/"2d_dambreak_boulder"
-PARTICLE_RADIUS = 0.00013 / 2.
+PARTICLE_RADIUS = 0.0013 / 2.
 
 if sys.platform.startswith('linux'):
     PATH = str(PATH) + "/bin/output/"

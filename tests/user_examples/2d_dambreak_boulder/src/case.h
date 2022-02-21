@@ -13,13 +13,14 @@ using namespace SPH;
  */
 const Real DL = 3.5; 								/**< Tank length [m]. */
 const Real DH = 0.5; 								/**< Tank height [m]. */
-const Real WH = 0.2; 								/**< Water block width [m]. */
+const Real WH = 0.3; 								/**< Water block width [m]. */
 const Real WL = 0.5; 								/**< Water block height [m]. */
-const Real wall_H = 0.2;							/**< Verical wall height [m] */
-const Real wall_position = 2.0;						/**< Position of the verical wall [m] (x direction) */ 
+const Real WALL_H = 0.2;							/**< Verical wall height [m] */
+const Real WALL_X = 2.0;							/**< Position of the verical wall [m] (x direction) */ 
+const Real DAMP_L = 1.0;							/**< Damping zone length [m] */ 
 const Real BL = 2.0e-2;								/**< Boulder lenght [m]. */
 const Real BH = 1.5e-2;								/**< Boulder height [m]. */
-const Real B_x = wall_position - 0.1;				/**< Boulder initial position x-axis (right edge) [m]. */
+const Real B_x = WALL_X - 0.0;						/**< Boulder initial position x-axis (right edge) [m]. */
 const Real B_y = 0.0;								/**< Boulder initial position y-axis (right edge) [m]. */
 const Real particle_spacing_ref = BH / 12.0; 		/**< Initial reference particle spacing. */
 const Real BW = particle_spacing_ref * 6.0; 		/**< Extending width for BCs. */
@@ -51,7 +52,7 @@ const Real physical_viscosity = 1e5;
 /**
 * @brief 	Create a water block shape.
 */
-std::vector<Vecd> CreateWaterBlockShape()
+std::vector<Vecd> createWaterBlockShape()
 {
 	//geometry
 	std::vector<Vecd> water_block_shape;
@@ -66,7 +67,7 @@ std::vector<Vecd> CreateWaterBlockShape()
 /** 
 * @brief	Create outer wall shape.
 */
-std::vector<Vecd> CreateOuterWallShape()
+std::vector<Vecd> createOuterWallShape()
 {
 	std::vector<Vecd> outer_wall_shape;
 	outer_wall_shape.push_back(Vecd(-BW, -BW));
@@ -80,7 +81,7 @@ std::vector<Vecd> CreateOuterWallShape()
 /**
 * @brief 	Create inner wall shape.
 */
-std::vector<Vecd> CreateInnerWallShape()
+std::vector<Vecd> createInnerWallShape()
 {
 	std::vector<Vecd> inner_wall_shape;
 	inner_wall_shape.push_back(Vecd(0.0, 0.0));
@@ -93,36 +94,53 @@ std::vector<Vecd> CreateInnerWallShape()
 /**
 * @brief 	Create outer verical wall shape.
 */
-std::vector<Vecd> CreateOuterVerWallShape()
+std::vector<Vecd> createOuterVerWallShape()
 {
 	std::vector<Vecd> outer_ver_wall_shape;
-	outer_ver_wall_shape.push_back(Vecd(wall_position, 0.0));
-	outer_ver_wall_shape.push_back(Vecd(wall_position, wall_H));
-	outer_ver_wall_shape.push_back(Vecd(DL, wall_H));
+	outer_ver_wall_shape.push_back(Vecd(WALL_X, 0.0));
+	outer_ver_wall_shape.push_back(Vecd(WALL_X, WALL_H));
+	outer_ver_wall_shape.push_back(Vecd(DL, WALL_H));
 	outer_ver_wall_shape.push_back(Vecd(DL, 0.0));
-	outer_ver_wall_shape.push_back(Vecd(wall_position, 0.0));
+	outer_ver_wall_shape.push_back(Vecd(WALL_X, 0.0));
 	return outer_ver_wall_shape;
 }
 
 /**
 * @brief 	Create inner verical wall shape.
 */
-std::vector<Vecd> CreateInnerVerWallShape()
+std::vector<Vecd> createInnerVerWallShape()
 {
 	std::vector<Vecd> inner_ver_wall_shape;
-	inner_ver_wall_shape.push_back(Vecd(wall_position + BW, -BW));
-	inner_ver_wall_shape.push_back(Vecd(wall_position + BW, wall_H - BW));
-	inner_ver_wall_shape.push_back(Vecd(DL + BW, wall_H - BW));
+	inner_ver_wall_shape.push_back(Vecd(WALL_X + BW, -BW));
+	inner_ver_wall_shape.push_back(Vecd(WALL_X + BW, WALL_H - BW));
+	inner_ver_wall_shape.push_back(Vecd(DL + BW, WALL_H - BW));
 	inner_ver_wall_shape.push_back(Vecd(DL + BW, -BW));
-	inner_ver_wall_shape.push_back(Vecd(wall_position + BW, -BW));
+	inner_ver_wall_shape.push_back(Vecd(WALL_X + BW, -BW));
 	return inner_ver_wall_shape;
 }
 
 
 /**
+* @brief 	Create damping zone.
+*/
+MultiPolygon createDampingZoneShape()
+{
+	std::vector<Vecd> points;
+	points.push_back(Vecd(DL - DAMP_L, WALL_H - BW));
+	points.push_back(Vecd(DL - DAMP_L, DH));
+	points.push_back(Vecd(DL + BW, DH));
+	points.push_back(Vecd(DL + BW, WALL_H - BW));
+	points.push_back(Vecd(DL - DAMP_L, WALL_H - BW));
+
+	MultiPolygon multi_polygon;
+	multi_polygon.addAPolygon(points, ShapeBooleanOps::add);
+	return multi_polygon;
+}
+
+/**
 * @brief 	Create boulder shape.
 */
-std::vector<Vecd> CreateBoulderShape()
+std::vector<Vecd> createBoulderShape()
 {
 	std::vector<Vecd> boulder;
 	boulder.push_back(Vecd(B_x - BL, B_y));
@@ -144,7 +162,7 @@ public:
 	{
 		/** Geomtry definition. */
 		MultiPolygon multi_polygon;
-		std::vector<Vecd> water_block_shape = CreateWaterBlockShape();
+		std::vector<Vecd> water_block_shape = createWaterBlockShape();
 		multi_polygon.addAPolygon(water_block_shape, ShapeBooleanOps::add);
 		body_shape_.add<MultiPolygonShape>(multi_polygon);
 	}
@@ -172,10 +190,10 @@ public:
 	{
 		/** Geomtry definition. */
 		MultiPolygon multi_polygon;
-		std::vector<Vecd> outer_shape = CreateOuterWallShape();
-		std::vector<Vecd> inner_shape = CreateInnerWallShape();
-		std::vector<Vecd> outer_vertical_wall_shape = CreateOuterVerWallShape();
-		std::vector<Vecd> inner_vertical_wall_shape = CreateInnerVerWallShape();
+		std::vector<Vecd> outer_shape = createOuterWallShape();
+		std::vector<Vecd> inner_shape = createInnerWallShape();
+		std::vector<Vecd> outer_vertical_wall_shape = createOuterVerWallShape();
+		std::vector<Vecd> inner_vertical_wall_shape = createInnerVerWallShape();
 		multi_polygon.addAPolygon(outer_shape, ShapeBooleanOps::add);
 		multi_polygon.addAPolygon(inner_shape, ShapeBooleanOps::sub);
 		multi_polygon.addAPolygon(outer_vertical_wall_shape, ShapeBooleanOps::add);
@@ -195,7 +213,7 @@ public:
 	{
 		/** Geomtry definition. */
 		MultiPolygon multi_polygon;
-		std::vector<Vecd> boulder_shape = CreateBoulderShape();
+		std::vector<Vecd> boulder_shape = createBoulderShape();
 		multi_polygon.addAPolygon(boulder_shape, ShapeBooleanOps::add);
 		body_shape_.add<MultiPolygonShape>(multi_polygon);
 	}
@@ -213,7 +231,7 @@ public:
 MultiPolygon CreateBoulderMultiShape()
 {
 	MultiPolygon multi_polygon;
-	std::vector<Vecd> boulder_shape = CreateBoulderShape();
+	std::vector<Vecd> boulder_shape = createBoulderShape();
 	multi_polygon.addAPolygon(boulder_shape, ShapeBooleanOps::add);
 	return multi_polygon;
 }
