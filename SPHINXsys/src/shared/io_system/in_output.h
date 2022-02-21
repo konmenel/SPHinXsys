@@ -622,6 +622,25 @@ namespace SPH
 	};
 
 	/**
+	 * @class WriteSimBodyFreeData
+	* @brief Position and velocity of Free MobilizedBody.
+	*/
+	class WriteSimBodyFreeData : public WriteSimBodyStates<SimTK::MobilizedBody::Free>
+	{
+	protected:
+		std::string filefullpath_;
+		SimTK::MultibodySystem &mb_system_;
+
+	public:
+		WriteSimBodyFreeData(In_Output &in_output,
+							 SimTK::RungeKuttaMersonIntegrator &integ,
+							 SimTK::MobilizedBody::Free &freebody,
+							 SimTK::MultibodySystem &mb_system);
+		virtual ~WriteSimBodyFreeData(){};
+		virtual void writeToFile(size_t iteration_step = 0) override;
+	};
+
+	/**
 	 * @class ReloadMaterialParameterIO
 	 * @brief For write  and read material property.
 	 */

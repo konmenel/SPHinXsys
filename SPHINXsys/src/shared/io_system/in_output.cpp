@@ -461,6 +461,63 @@ namespace SPH
 		out_file << "\n";
 		out_file.close();
 	};
+	//=============================================================================================//
+	WriteSimBodyFreeData::
+		WriteSimBodyFreeData(In_Output &in_output,
+							 SimTK::RungeKuttaMersonIntegrator &integ,
+							 SimTK::MobilizedBody::Free &pinbody,
+							 SimTK::MultibodySystem &mb_system)
+		: WriteSimBodyStates<SimTK::MobilizedBody::Free>(in_output, integ, pinbody),
+		filefullpath_(in_output_.output_folder_ + "/mb_Freebody_data.dat"),
+		mb_system_(mb_system)
+	{
+		std::ofstream out_file(filefullpath_.c_str(), std::ios::app);
+
+		out_file << "\"time\""
+				 << "   ";
+		out_file << "  "
+				 << "x"
+				 << " ";
+		out_file << "  "
+				 << "y"
+				 << " ";
+		out_file << "  "
+				 << "z"
+				 << " ";
+		out_file << "  "
+				 << "vel_x"
+				 << " ";
+		out_file << "  "
+				 << "vel_y"
+				 << " ";
+		out_file << "  "
+				 << "vel_z"
+				 << " ";
+		out_file << "\n";
+
+		out_file.close();
+	};
+	//=============================================================================================//
+	void WriteSimBodyFreeData::writeToFile(size_t iteration_step)
+	{
+		std::ofstream out_file(filefullpath_.c_str(), std::ios::app);
+		out_file << GlobalStaticVariables::physical_time_;
+		const SimTK::State &state = integ_.getState();
+		mb_system_.realize(state, SimTK::Stage::Velocity);
+
+		SimTK::Vec3 pos = mobody_.getBodyOriginLocation(state);
+		SimTK::Vec3 vel = mobody_.getBodyOriginVelocity(state);
+		out_file << "  " << pos[0]
+				 << "  " << pos[1]
+				 << "  " << pos[2] 
+				 << "  " << vel[0]
+				 << "  " << vel[1] 
+				 << "  " << vel[2] 
+				 << "  ";
+
+		out_file << "\n";
+		out_file.close();
+	};
 	//=================================================================================================//
 	ReloadMaterialParameterIO::ReloadMaterialParameterIO(In_Output &in_output, SharedPtr<BaseMaterial> material)
 		: in_output_(in_output), material_(material.get()),
