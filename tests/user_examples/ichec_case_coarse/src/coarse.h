@@ -11,18 +11,13 @@ using namespace SPH;
 /**
  * @brief Basic geometry parameters and numerical setup.
  */
-const Real DL = 3.5; 								/**< Tank length [m]. */
+const Real DL = 12.0; 								/**< Tank length [m]. */
 const Real DH = 0.5; 								/**< Tank height [m]. */
-const Real WH = 0.25; 								/**< Water block width [m]. */
-const Real WL = 0.5; 								/**< Water block height [m]. */
+const Real WH = 0.4; 								/**< Water block width [m]. */
+const Real WL = 3.0; 								/**< Water block height [m]. */
 const Real WALL_H = 0.2;							/**< Verical wall height [m] */
-const Real WALL_X = 2.0;							/**< Position of the verical wall [m] (x direction) */ 
-const Real DAMP_L = 0.5;							/**< Damping zone length [m] */ 
-const Real BL = 2.0e-2;								/**< Boulder lenght [m]. */
-const Real BH = 1.5e-2;								/**< Boulder height [m]. */
-const Real particle_spacing_ref = BH / 12.0; 		/**< Initial reference particle spacing. */
-const Real B_x = WALL_X;							/**< Boulder initial position x-axis (right edge) [m]. */
-const Real B_y = 0.0;								/**< Boulder initial position y-axis (right edge) [m]. */
+const Real WALL_X = 7.0;							/**< Position of the verical wall [m] (x direction) */ 
+const Real particle_spacing_ref = 1.5e-3; 			/**< Initial reference particle spacing. */
 const Real BW = particle_spacing_ref * 6.0; 		/**< Extending width for BCs. */
 
 /** Domain bounds of the system. */
@@ -38,16 +33,6 @@ const Real rho0_f = 1000.0;								/**< Reference density of fluid [kg/m^3]. */
 const Real U_f = 2.0 * sqrt(gravity_g * WH);			/**< Characteristic velocity [m/s]. */
 const Real c_f = 10.0 * U_f;							/**< Reference sound speed [m/s]. */
 const Real mu_f = 1.0e-6;								/**< Reference dynamic viscocity of fluid [Ns/m^2]. */
-
-/**
- * @brief Material properties of the solid.
- */
-const Real rho0_s = 2.8e3;								/**< Boulder Density [kg/m^3] from paper. */
-const Real boulder_vol = BL * BH;						/**< Boulder Volume [m^2]. (1.5 x 2.0 x 3.0 cm) */
-const Real boulder_mass = rho0_s * boulder_vol;			/**< Boulder Mass [kg/m]. */
-const Real poisson = 0.0;								/**< Poisson's ratio. */
-const Real Youngs_modulus = 73e7;						/**< Young's modulus [Pa]. */
-const Real physical_viscosity = 1e5;
 
 /**
 * @brief 	Create a water block shape.
@@ -119,38 +104,6 @@ std::vector<Vecd> createInnerVerWallShape()
 	return inner_ver_wall_shape;
 }
 
-
-/**
-* @brief 	Create damping zone.
-*/
-MultiPolygon createDampingZoneShape()
-{
-	std::vector<Vecd> points;
-	points.push_back(Vecd(DL - DAMP_L, WALL_H - BW));
-	points.push_back(Vecd(DL - DAMP_L, DH));
-	points.push_back(Vecd(DL + BW, DH));
-	points.push_back(Vecd(DL + BW, WALL_H - BW));
-	points.push_back(Vecd(DL - DAMP_L, WALL_H - BW));
-
-	MultiPolygon multi_polygon;
-	multi_polygon.addAPolygon(points, ShapeBooleanOps::add);
-	return multi_polygon;
-}
-
-/**
-* @brief 	Create boulder shape.
-*/
-std::vector<Vecd> createBoulderShape()
-{
-	std::vector<Vecd> boulder;
-	boulder.push_back(Vecd(B_x - BL, B_y));
-	boulder.push_back(Vecd(B_x - BL, B_y + BH));
-	boulder.push_back(Vecd(B_x, B_y + BH));
-	boulder.push_back(Vecd(B_x, B_y));
-	boulder.push_back(Vecd(B_x - BL, B_y));
-	return boulder;
-}
-
 /**
 * @brief 	Fluid body definition.
 */
@@ -199,93 +152,5 @@ public:
 		multi_polygon.addAPolygon(outer_vertical_wall_shape, ShapeBooleanOps::add);
 		multi_polygon.addAPolygon(inner_vertical_wall_shape, ShapeBooleanOps::sub);
 		body_shape_.add<MultiPolygonShape>(multi_polygon);
-	}
-};
-
-/**
- * @brief 	Boulder body definition.
- */
-class Boulder : public SolidBody
-{
-public:
-	Boulder(SPHSystem &sph_system, string body_name)
-		: SolidBody(sph_system, body_name)
-	{
-		/** Geomtry definition. */
-		MultiPolygon multi_polygon;
-		std::vector<Vecd> boulder_shape = createBoulderShape();
-		multi_polygon.addAPolygon(boulder_shape, ShapeBooleanOps::add);
-		body_shape_.add<MultiPolygonShape>(multi_polygon);
-	}
-};
-
-/**
- * @brief Define boulder material.
- */
-class BoulderMaterial : public LinearElasticSolid
-{
-public:
-	BoulderMaterial() : LinearElasticSolid(rho0_s, Youngs_modulus, poisson) {}
-};
-
-MultiPolygon CreateBoulderMultiShape()
-{
-	MultiPolygon multi_polygon;
-	std::vector<Vecd> boulder_shape = createBoulderShape();
-	multi_polygon.addAPolygon(boulder_shape, ShapeBooleanOps::add);
-	return multi_polygon;
-}
-
-/**
-* @brief 	Create boulder body for simbody
-*/
-class BoulderSystemForSimbody : public SolidBodyPartForSimbody
-{
-public:
-	BoulderSystemForSimbody(SolidBody &solid_body,
-						 	const std::string &constrained_region_name,
-							Shape& shape)
-		: SolidBodyPartForSimbody(solid_body, constrained_region_name, shape)
-	{
-		body_part_mass_properties_ = mass_properties_ptr_keeper_
-			.createPtr<SimTK::MassProperties>(
-				boulder_mass, 
-				SimTK::Vec3(0.0), 
-				SimTK::UnitInertia::brick(BL/2.0, BH/2.0, 0.0)
-			);
-	}
-};
-
-class BoulderObserverParticleGenerator : public ParticleGeneratorDirect
-{
-public:
-	BoulderObserverParticleGenerator() : ParticleGeneratorDirect()
-	{
-		/** the measuring particle with zero volume */
-		positions_volumes_.push_back(std::make_pair(
-			Vecd(B_x - BL, B_y + 0.1*BH), 0.0));
-		positions_volumes_.push_back(std::make_pair(
-			Vecd(B_x - BL, B_y + 0.5*BH), 0.0));
-		positions_volumes_.push_back(std::make_pair(
-			Vecd(B_x - BL, B_y + 0.9*BH), 0.0));
-	}
-};
-
-class WaterObserverParticleGenerator : public ParticleGeneratorDirect
-{
-public:
-	WaterObserverParticleGenerator() : ParticleGeneratorDirect()
-	{
-		/** the measuring particle with zero volume */
-		positions_volumes_.push_back(std::make_pair(
-			Vecd(WL/2.0, 0.0), 0.0));
-		positions_volumes_.push_back(std::make_pair(
-			Vecd(WL/2.0, 0.25*WH), 0.0));
-		positions_volumes_.push_back(std::make_pair(
-			Vecd(WL/2.0, 0.5*WH), 0.0));
-		positions_volumes_.push_back(std::make_pair(
-			Vecd(WL/2.0, 0.75*WH), 0.0));
-		positions_volumes_.push_back(std::make_pair(
-			Vecd(WL/2.0, WH), 0.0));
 	}
 };

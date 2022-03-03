@@ -29,7 +29,8 @@ int main()
 	FluidParticles fluid_particles(water_block, makeShared<WaterMaterial>());
 	/** The wall boundary, body and particles container. */
 	WallBoundary wall_boundary(system, "Wall");
-	SolidParticles wall_particles(wall_boundary);
+	// SolidParticles wall_particles(wall_boundary);
+	ElasticSolidParticles wall_particles(wall_boundary, makeShared<BoulderMaterial>());
 	/** Boulder system. Body, material and particle container. */
 	Boulder boulder(system, "Boulder");
 	ElasticSolidParticles boulder_particles(boulder, makeShared<BoulderMaterial>());
@@ -182,7 +183,7 @@ int main()
 	GlobalStaticVariables::physical_time_ = 0.0;
 	int number_of_iterations = 0;
 	int screen_output_interval = 500;
-	Real End_Time = 2.0;			 /**< End time. */
+	Real End_Time = 10.0;			 /**< End time. */
 	Real D_Time = End_Time / 1500.0; /**< Time stamps for output of body states. */
 	Real Dt = 0.0;					 /**< Default advection time step sizes. */
 	Real dt = 0.0;					 /**< Default acoustic time step sizes. */
@@ -250,11 +251,14 @@ int main()
 			boulder_fluid_contact.updateConfiguration();
 			boulder_wall_contact.updateConfiguration();
 			observer_contact_with_water.updateConfiguration();
-		
+
+			tick_count t2 = tick_count::now();
 			write_boulder_data.writeToFile(GlobalStaticVariables::physical_time_);
 			write_total_force_on_boulder.writeToFile(GlobalStaticVariables::physical_time_);
 			write_total_viscous_force_on_boulder.writeToFile(GlobalStaticVariables::physical_time_);
 			pressure_probe.writeToFile(GlobalStaticVariables::physical_time_);
+			tick_count t3 = tick_count::now();
+			interval += t3 - t2;
 		}
 
 		tick_count t2 = tick_count::now();
@@ -264,9 +268,10 @@ int main()
 	}
 	tick_count t4 = tick_count::now();
 
-	tick_count::interval_t tt;
-	tt = t4 - t1 - interval;
-	cout << "Total wall time for computation: " << tt.seconds() << " seconds.\n";
-	cout << "Total time: " << (t4 - t1).seconds() << "seconds.\n";
+	tick_count::interval_t wall_time, total_run_time;
+	wall_time = t4 - t1 - interval;
+	total_run_time = t4 - t1;
+	cout << "Total wall time for computation: " << wall_time.seconds() << " seconds.\n";
+	cout << "Total time: " << total_run_time.seconds() << "seconds.\n";
 	return 0;
 }
