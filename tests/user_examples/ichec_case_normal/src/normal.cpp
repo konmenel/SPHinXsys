@@ -7,7 +7,7 @@
 /**
  * @brief The setup of the case
  */
-#include "coarse.h"
+#include "normal.h"
 /**
  * @brief 	Main program starts here.
  */
