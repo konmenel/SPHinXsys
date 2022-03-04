@@ -22,18 +22,17 @@ int main()
 	WaterBlock water_block(system, "WaterBody");
 	FluidParticles fluid_particles(water_block, makeShared<WaterMaterial>());
 	/** The wall boundary, body and particles container. */
-	cout << "Creating wall..." << std::flush;
 	WallBoundary wall_boundary(system, "Wall");
-	cout << "DONE!\n";
-	cout << "Generating wall particles..." << std::flush;
 	SolidParticles wall_particles(wall_boundary);
-	cout << "DONE!\n";
+
+	ObserverBody observer(system, "BoulderObserver");
+	ObserverParticles observer_particles(observer, makeShared<ObserverParticleGenerator>());
 	/** topology */
 	ComplexBodyRelation water_block_complex(water_block, {&wall_boundary});
+	BodyRelationContact observer_contact_with_water(observer, {&water_block});
 	/**
 	 * Methods used for time stepping
 	 */
-	cout << "Time stepping set up...";
 	/** Time step initialization, add gravity. */
 	TimeStepInitialization initialize_gravity_to_fluid(water_block, gravity);
 	/** Evaluation of density by summation approach. */
@@ -47,14 +46,12 @@ int main()
 	fluid_dynamics::DensityRelaxationRiemannWithWall density_relaxation(water_block_complex);
 	/** Computing viscous acceleration. */
 	fluid_dynamics::ViscousAccelerationWithWall viscous_acceleration(water_block_complex);
-	cout << "DONE!\n";
 
 	/** Output. */
 	In_Output in_output(system);
-	fluid_particles.addAVariableToWrite<indexScalar, Real>("Density");
-	fluid_particles.addAVariableToWrite<indexScalar, Real>("Volume");
 	fluid_particles.addAVariableToWrite<indexScalar, Real>("Pressure");
 	BodyStatesRecordingToVtp write_real_body_states(in_output, system.real_bodies_);
+	ObservedQuantityRecording<indexScalar, Real> pressure_probe("Pressure", in_output, observer_contact_with_water);
 	/**
 	 * @brief Prepare quantities will be used once only and initial condition.
 	 */
@@ -63,6 +60,7 @@ int main()
 	system.initializeSystemConfigurations();
 
 	write_real_body_states.writeToFile(0);
+	pressure_probe.writeToFile(0);
 	/** Simulation start here. */
 	/** starting time zero. */
 	system.restart_step_ = 0;
@@ -115,6 +113,11 @@ int main()
 			water_block.updateCellLinkedList();
 			wall_boundary.updateCellLinkedList();
 			water_block_complex.updateConfiguration();
+
+			tick_count t2 = tick_count::now();
+			pressure_probe.writeToFile(GlobalStaticVariables::physical_time_);
+			tick_count t3 = tick_count::now();
+			interval += t3 - t2;
 		}
 
 		tick_count t2 = tick_count::now();

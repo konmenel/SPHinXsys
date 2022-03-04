@@ -34,8 +34,8 @@ int main()
 	/** Boulder system. Body, material and particle container. */
 	Boulder boulder(system, "Boulder");
 	ElasticSolidParticles boulder_particles(boulder, makeShared<BoulderMaterial>());
-	/** Pressure probe on Flap. */
-	ObserverBody observer(system, "BoulderObserver");
+	/** Pressure probe on boulder. */
+	ObserverBody observer(system, "Observer");
 	ObserverParticles observer_particles(observer, makeShared<BoulderObserverParticleGenerator>());
 	/** Damping zone. */
 	MultiPolygonShape damping_buffer_shape(createDampingZoneShape());

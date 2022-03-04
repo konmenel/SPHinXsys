@@ -270,22 +270,3 @@ public:
 			Vecd(B_x - BL, B_y + 0.9*BH), 0.0));
 	}
 };
-
-class WaterObserverParticleGenerator : public ParticleGeneratorDirect
-{
-public:
-	WaterObserverParticleGenerator() : ParticleGeneratorDirect()
-	{
-		/** the measuring particle with zero volume */
-		positions_volumes_.push_back(std::make_pair(
-			Vecd(WL/2.0, 0.0), 0.0));
-		positions_volumes_.push_back(std::make_pair(
-			Vecd(WL/2.0, 0.25*WH), 0.0));
-		positions_volumes_.push_back(std::make_pair(
-			Vecd(WL/2.0, 0.5*WH), 0.0));
-		positions_volumes_.push_back(std::make_pair(
-			Vecd(WL/2.0, 0.75*WH), 0.0));
-		positions_volumes_.push_back(std::make_pair(
-			Vecd(WL/2.0, WH), 0.0));
-	}
-};
