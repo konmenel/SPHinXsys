@@ -11,13 +11,13 @@ using namespace SPH;
 /**
  * @brief Basic geometry parameters and numerical setup.
  */
-const Real DL = 12.0; 								/**< Tank length [m]. */
+const Real DL = 8.0; 								/**< Tank length [m]. */
 const Real DH = 0.5; 								/**< Tank height [m]. */
 const Real WH = 0.4; 								/**< Water block width [m]. */
 const Real WL = 3.0; 								/**< Water block height [m]. */
 const Real WALL_H = 0.2;							/**< Verical wall height [m] */
 const Real WALL_X = 7.0;							/**< Position of the verical wall [m] (x direction) */ 
-const Real particle_spacing_ref = 3e-3; 			/**< Initial reference particle spacing. */
+const Real particle_spacing_ref = 1.5e-3 / 2.0; 	/**< Initial reference particle spacing. */
 const Real BW = particle_spacing_ref * 6.0; 		/**< Extending width for BCs. */
 
 /** Domain bounds of the system. */

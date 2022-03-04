@@ -7,16 +7,10 @@
 /**
  * @brief The setup of the case
  */
-#include "coarse.h"
+#include "normal.h"
 /**
  * @brief 	Main program starts here.
  */
-
-// TODO: fix bouncing/found out why bounces higher
-// TODO: fix contact dumping
-// TODO: add dumping area at the end
-// TODO: add observers, wave probes etc.
-
 int main()
 {
 	/** Build up context -- a SPHSystem. */
@@ -29,7 +23,7 @@ int main()
 	FluidParticles fluid_particles(water_block, makeShared<WaterMaterial>());
 	/** The wall boundary, body and particles container. */
 	WallBoundary wall_boundary(system, "Wall");
-	// SolidParticles wall_particles(wall_boundary);
+	SolidParticles wall_particles(wall_boundary);
 	/** topology */
 	ComplexBodyRelation water_block_complex(water_block, {&wall_boundary});
 	/**
@@ -48,7 +42,6 @@ int main()
 	fluid_dynamics::DensityRelaxationRiemannWithWall density_relaxation(water_block_complex);
 	/** Computing viscous acceleration. */
 	fluid_dynamics::ViscousAccelerationWithWall viscous_acceleration(water_block_complex);
-
 	/**
 	 * @brief Prepare quantities will be used once only and initial condition.
 	 */

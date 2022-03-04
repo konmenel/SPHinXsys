@@ -11,7 +11,7 @@ using namespace SPH;
 /**
  * @brief Basic geometry parameters and numerical setup.
  */
-const Real DL = 12.0; 								/**< Tank length [m]. */
+const Real DL = 8.0; 								/**< Tank length [m]. */
 const Real DH = 0.5; 								/**< Tank height [m]. */
 const Real WH = 0.4; 								/**< Water block width [m]. */
 const Real WL = 3.0; 								/**< Water block height [m]. */
