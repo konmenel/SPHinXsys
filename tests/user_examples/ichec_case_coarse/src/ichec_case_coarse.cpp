@@ -54,7 +54,7 @@ int main()
 	GlobalStaticVariables::physical_time_ = 0.0;
 	int number_of_iterations = 0;
 	int screen_output_interval = 1000;
-	Real End_Time = 5.0;			 /**< End time. */
+	Real End_Time = 10.0;			 /**< End time. */
 	Real Dt = 0.0;					 /**< Default advection time step sizes. */
 	Real dt = 0.0;					 /**< Default acoustic time step sizes. */
 	Real total_time = 0.0;
