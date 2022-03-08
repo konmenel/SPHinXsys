@@ -1,12 +1,11 @@
- /**
-  * @brief 	SPHinXsys Library.
-  */
+/**
+ * @brief 	SPHinXsys Library.
+ */
 #include "sphinxsys.h"
-  /**
+/**
  * @brief Namespace cite here.
  */
 using namespace SPH;
-
 
 /**
  * @brief Basic geometry parameters and numerical setup.

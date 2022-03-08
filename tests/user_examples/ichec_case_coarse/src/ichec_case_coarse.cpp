@@ -41,6 +41,11 @@ int main()
 	fluid_dynamics::DensityRelaxationRiemannWithWall density_relaxation(water_block_complex);
 	/** Computing viscous acceleration. */
 	fluid_dynamics::ViscousAccelerationWithWall viscous_acceleration(water_block_complex);
+	
+	/** Output. */
+	cout << "Setting up output...\n";
+	ofstream fcout("./stdout.out");
+
 	/**
 	 * @brief Prepare quantities will be used once only and initial condition.
 	 */
@@ -49,6 +54,7 @@ int main()
 	system.initializeSystemConfigurations();
 
 	/** Simulation start here. */
+	fcout << "Setting up main loop...";
 	/** starting time zero. */
 	system.restart_step_ = 0;
 	GlobalStaticVariables::physical_time_ = 0.0;
@@ -60,6 +66,9 @@ int main()
 	Real total_time = 0.0;
 	/** statistics for computing time. */
 	tick_count t1 = tick_count::now();
+	fcout << " DONE\n"
+		  << "Main loop started.\n";
+	fcout.flush();
 	/** Main Loop. */
 	while (GlobalStaticVariables::physical_time_ < End_Time)
 	{
@@ -86,10 +95,11 @@ int main()
 
 		if (number_of_iterations % screen_output_interval == 0)
 		{
-			cout << fixed << setprecision(9) << "N=" << number_of_iterations
+			fcout << fixed << setprecision(9) << "N=" << number_of_iterations
 					<< "	Total Time = " << total_time
 					<< "	Physical Time = " << GlobalStaticVariables::physical_time_
 					<< "	Dt = " << Dt << "	dt = " << dt << "\n";
+			fcout.flush();
 		}
 		number_of_iterations++;
 		water_block.updateCellLinkedList();
@@ -101,7 +111,10 @@ int main()
 	tick_count::interval_t wall_time, total_run_time;
 	wall_time = t4 - t1;
 	total_run_time = t4 - t1;
-	cout << "Total wall time for computation: " << wall_time.seconds() << " seconds.\n";
-	cout << "Total time: " << total_run_time.seconds() << "seconds.\n";
+	fcout << "Total wall time for computation: " << wall_time.seconds() << " seconds.\n";
+	fcout << "Total time: " << total_run_time.seconds() << "seconds.\n";
+	
+	fcout.flush();
+	fcout.close();
 	return 0;
 }
