@@ -48,6 +48,8 @@ int main()
 	fluid_dynamics::ViscousAccelerationWithWall viscous_acceleration(water_block_complex);
 
 	/** Output. */
+	ofstream fcout("./stdout.out");
+	fcout << "Setting up output...\n";
 	In_Output in_output(system);
 	fluid_particles.addAVariableToWrite<indexScalar, Real>("Pressure");
 	BodyStatesRecordingToVtp write_real_body_states(in_output, system.real_bodies_);
@@ -62,6 +64,7 @@ int main()
 	write_real_body_states.writeToFile(0);
 	pressure_probe.writeToFile(0);
 	/** Simulation start here. */
+	fcout << "Setting up main loop...";
 	/** starting time zero. */
 	system.restart_step_ = 0;
 	GlobalStaticVariables::physical_time_ = 0.0;
@@ -73,6 +76,9 @@ int main()
 	Real dt = 0.0;					 	/**< Default acoustic time step sizes. */
 	Real total_time = 0.0;
 	/** statistics for computing time. */
+	fcout << " DONE\n"
+		  << "Main loop started.\n";
+	fcout.flush();
 	tick_count t1 = tick_count::now();
 	tick_count::interval_t interval;
 	/** Main Loop. */
@@ -104,10 +110,11 @@ int main()
 
 			if (number_of_iterations % screen_output_interval == 0)
 			{
-				cout << fixed << setprecision(9) << "N=" << number_of_iterations
+				fcout << fixed << setprecision(9) << "N=" << number_of_iterations
 					 << "	Total Time = " << total_time
 					 << "	Physical Time = " << GlobalStaticVariables::physical_time_
 					 << "	Dt = " << Dt << "	dt = " << dt << "\n";
+				fcout.flush();
 			}
 			number_of_iterations++;
 			water_block.updateCellLinkedList();
@@ -132,5 +139,8 @@ int main()
 	total_run_time = t4 - t1;
 	cout << "Total wall time for computation: " << wall_time.seconds() << " seconds.\n";
 	cout << "Total time: " << total_run_time.seconds() << "seconds.\n";
+
+	fcout.flush();
+	fcout.close();
 	return 0;
 }

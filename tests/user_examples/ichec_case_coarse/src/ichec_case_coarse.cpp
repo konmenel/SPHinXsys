@@ -43,8 +43,8 @@ int main()
 	fluid_dynamics::ViscousAccelerationWithWall viscous_acceleration(water_block_complex);
 	
 	/** Output. */
-	cout << "Setting up output...\n";
 	ofstream fcout("./stdout.out");
+	fcout << "Setting up output...\n";
 
 	/**
 	 * @brief Prepare quantities will be used once only and initial condition.
