@@ -71,7 +71,7 @@ int main()
 	int number_of_iterations = 0;
 	int screen_output_interval = 1000;
 	Real End_Time = 10.0;			 	/**< End time. */
-	Real D_Time = 0.001; 				/**< Time stamps for output of body states. */
+	Real D_Time = 0.002; 				/**< Time stamps for output of body states. */
 	Real Dt = 0.0;					 	/**< Default advection time step sizes. */
 	Real dt = 0.0;					 	/**< Default acoustic time step sizes. */
 	Real total_time = 0.0;
