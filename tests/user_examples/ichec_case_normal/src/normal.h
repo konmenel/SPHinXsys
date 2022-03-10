@@ -1,8 +1,10 @@
- /**
+/**
   * @brief 	SPHinXsys Library.
   */
 #include "sphinxsys.h"
-  /**
+
+#define SQRT2 1.41421356237
+/**
  * @brief Namespace cite here.
  */
 using namespace SPH;
@@ -17,8 +19,8 @@ const Real WH = 0.4; 								/**< Water block width [m]. */
 const Real WL = 3.0; 								/**< Water block height [m]. */
 const Real WALL_H = 0.2;							/**< Verical wall height [m] */
 const Real WALL_X = 7.0;							/**< Position of the verical wall [m] (x direction) */ 
-const Real particle_spacing_ref = 1.5e-3 / 2.0; 	/**< Initial reference particle spacing. */
-const Real BW = particle_spacing_ref * 6.0; 		/**< Extending width for BCs. */
+const Real particle_spacing_ref = 1.5e-3 / SQRT2; 	/**< Initial reference particle spacing. */
+const Real BW = particle_spacing_ref * 10.0; 		/**< Extending width for BCs. */
 
 /** Domain bounds of the system. */
 BoundingBox system_domain_bounds(Vec2d(-BW, -BW), Vec2d(DL + BW, DH + BW));
