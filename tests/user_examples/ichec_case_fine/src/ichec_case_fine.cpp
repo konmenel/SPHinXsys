@@ -137,8 +137,8 @@ int main()
 	tick_count::interval_t wall_time, total_run_time;
 	wall_time = t4 - t1 - interval;
 	total_run_time = t4 - t1;
-	cout << "Total wall time for computation: " << wall_time.seconds() << " seconds.\n";
-	cout << "Total time: " << total_run_time.seconds() << "seconds.\n";
+	fcout << "Total wall time for computation: " << wall_time.seconds() << " seconds.\n";
+	fcout << "Total time: " << total_run_time.seconds() << "seconds.\n";
 
 	fcout.flush();
 	fcout.close();
