@@ -13,16 +13,16 @@ using namespace SPH;
  */
 const Real DL = 3.5; 								/**< Tank length [m]. */
 const Real DH = 0.5; 								/**< Tank height [m]. */
-const Real WH = 0.25; 								/**< Water block width [m]. */
+const Real WH = 0.2; 								/**< Water block width [m]. */
 const Real WL = 0.5; 								/**< Water block height [m]. */
 const Real WALL_H = 0.2;							/**< Verical wall height [m] */
 const Real WALL_X = 2.0;							/**< Position of the verical wall [m] (x direction) */ 
 const Real DAMP_L = 0.5;							/**< Damping zone length [m] */ 
 const Real BL = 2.0e-2;								/**< Boulder lenght [m]. */
 const Real BH = 1.5e-2;								/**< Boulder height [m]. */
-const Real particle_spacing_ref = BH / 12.0; 		/**< Initial reference particle spacing. */
-const Real B_x = WALL_X;							/**< Boulder initial position x-axis (right edge) [m]. */
-const Real B_y = 0.0;								/**< Boulder initial position y-axis (right edge) [m]. */
+const Real particle_spacing_ref = BH / 6.0; 		/**< Initial reference particle spacing. */
+const Real B_x = WALL_X - 0.05;							/**< Boulder initial position x-axis (right edge) [m]. */
+const Real B_y = 0.05;								/**< Boulder initial position y-axis (right edge) [m]. */
 const Real BW = particle_spacing_ref * 6.0; 		/**< Extending width for BCs. */
 
 /** Domain bounds of the system. */
@@ -37,7 +37,7 @@ const Real gravity_g = 9.81;
 const Real rho0_f = 1000.0;								/**< Reference density of fluid [kg/m^3]. */
 const Real U_f = 2.0 * sqrt(gravity_g * WH);			/**< Characteristic velocity [m/s]. */
 const Real c_f = 10.0 * U_f;							/**< Reference sound speed [m/s]. */
-const Real mu_f = 1.0e-6;								/**< Reference dynamic viscocity of fluid [Ns/m^2]. */
+const Real mu_f = 1.0e-3;								/**< Reference dynamic viscocity of fluid [Ns/m^2]. */
 
 /**
  * @brief Material properties of the solid.
@@ -45,9 +45,8 @@ const Real mu_f = 1.0e-6;								/**< Reference dynamic viscocity of fluid [Ns/m
 const Real rho0_s = 2.8e3;								/**< Boulder Density [kg/m^3] from paper. */
 const Real boulder_vol = BL * BH;						/**< Boulder Volume [m^2]. (1.5 x 2.0 x 3.0 cm) */
 const Real boulder_mass = rho0_s * boulder_vol;			/**< Boulder Mass [kg/m]. */
-const Real poisson = 0.0;								/**< Poisson's ratio. */
-const Real Youngs_modulus = 73e7;						/**< Young's modulus [Pa]. */
-const Real physical_viscosity = 1e5;
+const Real poisson = 0.3;								/**< Poisson's ratio. */
+const Real Youngs_modulus = 73e9;						/**< Young's modulus [Pa]. */
 
 /**
 * @brief 	Create a water block shape.

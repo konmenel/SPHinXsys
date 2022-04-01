@@ -210,10 +210,10 @@ int main()
 			Real relaxation_time = 0.0;
 			while (relaxation_time < Dt)
 			{
+				dt = get_fluid_time_step_size.parallel_exec() * 0.25;
 				pressure_relaxation.parallel_exec(dt);
 				boulder_update_contact_density.parallel_exec();
 				contact_force_on_boulder.parallel_exec();
-				// boulder_damping.parallel_exec(dt);
 				fluid_force_on_boulder.parallel_exec();
 				density_relaxation.parallel_exec(dt);
 				/** solid dynamics. */
@@ -225,11 +225,9 @@ int main()
 												force_on_boulder.parallel_exec());
 				integ.stepBy(dt);
 				constraint_boulder.parallel_exec();
-
 				average_velocity_and_acceleration.update_averages_.parallel_exec(dt);
 				interpolation_observer_position.parallel_exec();
 
-				dt = get_fluid_time_step_size.parallel_exec();
 				relaxation_time += dt;
 				integral_time += dt;
 				total_time += dt;
