@@ -45,6 +45,25 @@ namespace SPH
 		sph_system.in_output_ = this;
 	}
 	//=============================================================================================//
+	Endianness In_Output::getSystemEndianness()
+	{
+		const int value { 0x01 };
+		const void *address = static_cast<const void *>(&value);
+		const unsigned char *least_significant_address = static_cast<const unsigned char *>(address);
+		return (*least_significant_address == 0x01) ? Endianness::little : Endianness::big;
+	}
+	//=============================================================================================//
+	void In_Output::
+		writeDataReverseEndianness(std::ofstream &file, const void *data, size_t bytes_count, size_t type_size)
+	{
+		const char *data_char = reinterpret_cast<const char *>(data);
+		for (int i = 0; i < bytes_count; i += type_size) {
+			for (int j = type_size-1; j >=0; j--) {
+				file.write((data_char+i+j), 1);
+			}
+		}
+	}
+	//=============================================================================================//
 	void PltEngine::
 		writeAQuantityHeader(std::ofstream &out_file, const Real &quantity, const std::string &quantity_name)
 	{
@@ -129,6 +148,37 @@ namespace SPH
 
 				out_file << " </PolyData>\n";
 				out_file << "</VTKFile>\n";
+
+				out_file.close();
+			}
+			body->setNotNewlyUpdated();
+		}
+	}
+	//=============================================================================================//
+	void BodyStatesRecordingToLegacyVtk::writeWithFileName(const std::string &sequence)
+	{
+		for (SPHBody *body : bodies_)
+		{
+			if (body->checkNewlyUpdated())
+			{
+				//TODO: we can short the file name by without using SPHBody
+				std::string filefullpath = in_output_.output_folder_ + "/SPHBody_" + body->getBodyName() + "_" + sequence + ".vtk";
+				if (fs::exists(filefullpath))
+				{
+					fs::remove(filefullpath);
+				}
+				std::ofstream out_file(filefullpath.c_str(), std::ios::trunc);
+				//begin of the Legacy VTK file
+				out_file << "#vtk DataFile Version 3.0\n";
+				out_file << body->getBodyName() << " output\n";
+				out_file << "BINARY\n";
+				out_file << "DATASET POLYDATA\n";
+
+				BaseParticles *base_particles = body->base_particles_;
+				size_t total_real_particles = base_particles->total_real_particles_;
+				
+				//write the partcle data
+				body->writeParticlesToBinLecVtkFile(out_file, _endianness);
 
 				out_file.close();
 			}
