@@ -56,10 +56,14 @@ int main()
 	fluid_dynamics::AcousticTimeStepSize get_fluid_time_step_size(water_block);
 
 	//pressure relaxation using verlet time stepping
-	fluid_dynamics::PressureRelaxationRiemannWithWall pressure_relaxation(water_block_complex);
-	fluid_dynamics::DensityRelaxationRiemannWithWall density_relaxation(water_block_complex);
+	fluid_dynamics::PressureRelaxationWithWall pressure_relaxation(water_block_complex);
+	fluid_dynamics::DensityRelaxationWithWall density_relaxation(water_block_complex);
 	/** Computing viscous acceleration. */
-	fluid_dynamics::ViscousAccelerationWithWall viscous_acceleration(water_block_complex);
+	// fluid_dynamics::ViscousAccelerationWithWall viscous_acceleration(water_block_complex);
+	/** Impose transport velocity. */
+	fluid_dynamics::TransportVelocityCorrectionComplex transport_velocity_correction(water_block_complex);
+	/** viscous acceleration and transport velocity correction can be combined because they are independent dynamics. */
+	// CombinedInteractionDynamics viscous_acceleration_and_transport_correction(viscous_acceleration, transport_velocity_correction);
 
 	//-----------------------------------------------------------------------------
 	//outputs
@@ -124,7 +128,9 @@ int main()
 			Real Dt = get_fluid_advection_time_step_size.parallel_exec();
 			Dt = SMIN(Dt, D_Time - integration_time);
 			update_density_by_summation.parallel_exec();
-			viscous_acceleration.parallel_exec();
+			// viscous_acceleration.parallel_exec();
+			// viscous_acceleration_and_transport_correction.parallel_exec();
+			transport_velocity_correction.parallel_exec();
 
 			Real relaxation_time = 0.0;
 			while (relaxation_time < Dt)
