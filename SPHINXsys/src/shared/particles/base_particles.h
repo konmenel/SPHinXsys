@@ -35,7 +35,7 @@
 #include "sph_data_containers.h"
 #include "base_material.h"
 #include "xml_engine.h"
-#include "in_output.h"
+#include "endianness.h"
 
 #include <fstream>
 
@@ -169,7 +169,7 @@ namespace SPH
 		/** Write particle data in Vtp format for Paraview. */
 		virtual void writeParticlesToVtpFile(std::ofstream &output_file);
 		/** Write particle data in Binary Legacy Vtk format for Paraview. */
-		virtual void writeParticlesToBinLecVtkFile(std::ofstream &output_file, const Endianness &endianness);
+		virtual void writeParticlesToBinLecVtkFile(std::ofstream &output_file);
 		/** Write particle data in PLT format for Tecplot. */
 		void writeParticlesToPltFile(std::ofstream &output_file);
 		/** Write only surface particle data in VTU format for Paraview. TODO: this should be generalized for body part by particles */

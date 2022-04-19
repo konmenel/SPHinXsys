@@ -338,8 +338,9 @@ namespace SPH
 		}
 	}
 	//=================================================================================================//
-	void BaseParticles::writeParticlesToBinLecVtkFile(std::ofstream &output_file, const Endianness &endianness)
+	void BaseParticles::writeParticlesToBinLecVtkFile(std::ofstream &output_file)
 	{
+		const static Endianness endianness = Endian::getSystemEndianness();
 		size_t total_real_particles = total_real_particles_;
 
 		//write current/final particle positions first
@@ -347,57 +348,57 @@ namespace SPH
 		for (size_t i = 0; i != total_real_particles; ++i)
 		{
 			Vec3d particle_position = upgradeToVector3D(pos_n_[i]);
-			float part_pos_x = static_cast<float>(particle_position[0]);
-			float part_pos_y = static_cast<float>(particle_position[1]);
-			float part_pos_z = static_cast<float>(particle_position[2]);
-			
-			if (endianness == Endianness::little) {
-				In_Output::writeDataReverseEndianness(output_file, 
-					reinterpret_cast<const char *>(&part_pos_x),
-					sizeof(float), sizeof(float));
-				In_Output::writeDataReverseEndianness(output_file, 
-					reinterpret_cast<const char *>(&part_pos_y),
-					sizeof(float), sizeof(float));
-				In_Output::writeDataReverseEndianness(output_file, 
-					reinterpret_cast<const char *>(&part_pos_z),
-					sizeof(float), sizeof(float));
-			} else {
-				output_file.write(reinterpret_cast<const char *>(&part_pos_x), sizeof(float));
-				output_file.write(reinterpret_cast<const char *>(&part_pos_y), sizeof(float));
-				output_file.write(reinterpret_cast<const char *>(&part_pos_z), sizeof(float));
+			for (size_t j = 0; j < 3; ++j)
+			{
+				float part_pos_float = static_cast<float>(particle_position[j]);
+
+				if (endianness == Endianness::little) {
+					Endian::writeDataReverseEndianness(output_file, &part_pos_float, sizeof(float), sizeof(float));
+				} else {
+					output_file.write(reinterpret_cast<const char *>(&part_pos_float), sizeof(float));
+				}
 			}
 		}
 		output_file << "\n";
+
+			//write the vertices
+		int number_of_points = 1;
+		output_file << "VERTICES " << total_real_particles << " " << total_real_particles * 2 << "\n";
+		for (size_t i = 0; i != total_real_particles; ++i)
+		{
+			Endian::writeDataReverseEndianness(output_file, &number_of_points, sizeof(int), sizeof(int));
+			Endian::writeDataReverseEndianness(output_file, &i, sizeof(int), sizeof(int));
+		}
+		output_file << "\n";
+
 
 		//write sorted particles ID
 		output_file << "POINT_DATA " << total_real_particles << "\n";
 		output_file << "SCALARS Particle_ID unsigned_int\n";
 		output_file << "LOOKUP_TABLE default\n";
-		for (uint32_t i = 0; i != total_real_particles; ++i)
+		for (unsigned int i = 0; i != total_real_particles; ++i)
 		{
 			if (endianness == Endianness::little) {
-				In_Output::writeDataReverseEndianness(output_file, 
-					reinterpret_cast<const char *>(&i),
-					sizeof(uint32_t), sizeof(uint32_t));
+				Endian::writeDataReverseEndianness(output_file, &i,
+					sizeof(unsigned int), sizeof(unsigned int));
 			} else {
-				output_file.write(reinterpret_cast<const char *>(&i), sizeof(uint32_t));
+				output_file.write(reinterpret_cast<const char *>(&i), sizeof(unsigned int));
 			}
 		}
 		output_file << "\n";
 
 		//write unsorted particles ID
-		output_file << "POINT_DATA " << total_real_particles << "\n";
-		output_file << "SCALARS SortedParticle_ID unsigned_int\n";
+		output_file << "SCALARS UnsortedParticle_ID unsigned_int\n";
 		output_file << "LOOKUP_TABLE default\n";
 		for (size_t i = 0; i != total_real_particles; ++i)
 		{
-			uint32_t id = unsorted_id_[i];
+			unsigned int id = unsorted_id_[i];
 			if (endianness == Endianness::little) {
-				In_Output::writeDataReverseEndianness(output_file, 
+				Endian::writeDataReverseEndianness(output_file, 
 					reinterpret_cast<const char *>(&id),
-					sizeof(uint32_t), sizeof(uint32_t));
+					sizeof(unsigned int), sizeof(unsigned int));
 			} else {
-				output_file.write(reinterpret_cast<const char *>(&id), sizeof(uint32_t));
+				output_file.write(reinterpret_cast<const char *>(&id), sizeof(unsigned int));
 			}
 		}
 		output_file << "\n";
@@ -424,24 +425,17 @@ namespace SPH
 				for (int k = 0; k != 3; ++k)
 				{
 					Vec3d col_vector = matrix_value.col(k);
-					float col_vector_x = static_cast<float>(col_vector[0]);
-					float col_vector_y = static_cast<float>(col_vector[1]);
-					float col_vector_z = static_cast<float>(col_vector[2]);
 
-					if (endianness == Endianness::little) {
-						In_Output::writeDataReverseEndianness(output_file, 
-							reinterpret_cast<const char *>(&col_vector_x),
-							sizeof(float), sizeof(float));
-						In_Output::writeDataReverseEndianness(output_file, 
-							reinterpret_cast<const char *>(&col_vector_y),
-							sizeof(float), sizeof(float));
-						In_Output::writeDataReverseEndianness(output_file, 
-							reinterpret_cast<const char *>(&col_vector_z),
-							sizeof(float), sizeof(float));
-					} else {
-						output_file.write(reinterpret_cast<const char *>(&col_vector_x), sizeof(float));
-						output_file.write(reinterpret_cast<const char *>(&col_vector_y), sizeof(float));
-						output_file.write(reinterpret_cast<const char *>(&col_vector_z), sizeof(float));
+					for (int j = 0; j < 3; ++j)
+					{
+						float elem_float = static_cast<float>(col_vector[j]);
+
+						if (endianness == Endianness::little) {
+							Endian::writeDataReverseEndianness(output_file, &elem_float,
+								sizeof(float), sizeof(float));
+						} else {
+							output_file.write(reinterpret_cast<const char *>(&elem_float), sizeof(float));
+						}
 					}
 				}
 			}
@@ -455,33 +449,25 @@ namespace SPH
 			StdLargeVec<Vecd> &variable = *(std::get<indexVector>(all_particle_data_)[name_index.second]);
 			
 			// write header
-			output_file << variable_name << " 9 " << total_real_particles << " float\n";
+			output_file << variable_name << " 3 " << total_real_particles << " float\n";
 
 			for (size_t i = 0; i != total_real_particles; ++i)
 			{
 				Vec3d vector_value = upgradeToVector3D(variable[i]);
-				float vector_x = static_cast<float>(vector_value[0]);
-				float vector_y = static_cast<float>(vector_value[1]);
-				float vector_z = static_cast<float>(vector_value[2]);
+				
+				for (int j = 0; j < 3; ++j)
+				{
+					float elem_float = static_cast<float>(vector_value[j]);
 
-				if (endianness == Endianness::little) {
-					In_Output::writeDataReverseEndianness(output_file, 
-						reinterpret_cast<const char *>(&vector_x),
-						sizeof(float), sizeof(float));
-					In_Output::writeDataReverseEndianness(output_file, 
-						reinterpret_cast<const char *>(&vector_y),
-						sizeof(float), sizeof(float));
-					In_Output::writeDataReverseEndianness(output_file, 
-						reinterpret_cast<const char *>(&vector_z),
-						sizeof(float), sizeof(float));
-				} else {
-					output_file.write(reinterpret_cast<const char *>(&vector_x), sizeof(float));
-					output_file.write(reinterpret_cast<const char *>(&vector_y), sizeof(float));
-					output_file.write(reinterpret_cast<const char *>(&vector_z), sizeof(float));
+					if (endianness == Endianness::little) {
+						Endian::writeDataReverseEndianness(output_file, &elem_float,
+							sizeof(float), sizeof(float));
+					} else {
+						output_file.write(reinterpret_cast<const char *>(&elem_float), sizeof(float));
+					}
 				}
 			}
-			output_file << std::endl;
-			output_file << "    </DataArray>\n";
+			output_file << "\n";
 		}
 
 		//write scalars
@@ -491,15 +477,14 @@ namespace SPH
 			StdLargeVec<Real> &variable = *(std::get<indexScalar>(all_particle_data_)[name_index.second]);
 
 			// write header
-			output_file << variable_name << " 9 " << total_real_particles << " float\n";
+			output_file << variable_name << " 1 " << total_real_particles << " float\n";
 
 			for (size_t i = 0; i != total_real_particles; ++i)
 			{
 				float scalar_value = static_cast<float>(variable[i]);
 
 				if (endianness == Endianness::little) {
-					In_Output::writeDataReverseEndianness(output_file, 
-						reinterpret_cast<const char *>(&scalar_value),
+					Endian::writeDataReverseEndianness(output_file, &scalar_value,
 						sizeof(float), sizeof(float));
 				} else {
 					output_file.write(reinterpret_cast<const char *>(&scalar_value), sizeof(float));
@@ -515,19 +500,18 @@ namespace SPH
 			StdLargeVec<int> &variable = *(std::get<indexInteger>(all_particle_data_)[name_index.second]);
 			
 			// write header
-			output_file << variable_name << " 9 " << total_real_particles << " int\n";
+			output_file << variable_name << " 1 " << total_real_particles << " int\n";
 
 			for (size_t i = 0; i != total_real_particles; ++i)
 			{
 				// make sure correct number of bytes are written
-				int32_t integer_value = variable[i];
+				int integer_value = variable[i];
 
 				if (endianness == Endianness::little) {
-					In_Output::writeDataReverseEndianness(output_file, 
-						reinterpret_cast<const char *>(&integer_value),
-						sizeof(int32_t), sizeof(int32_t));
+					Endian::writeDataReverseEndianness(output_file, &integer_value,
+						sizeof(int), sizeof(int));
 				} else {
-					output_file.write(reinterpret_cast<const char *>(&integer_value), sizeof(int32_t));
+					output_file.write(reinterpret_cast<const char *>(&integer_value), sizeof(int));
 				}
 			}
 			output_file << "\n";

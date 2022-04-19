@@ -33,6 +33,7 @@
 #include "sph_data_containers.h"
 #include "all_physical_dynamics.h"
 #include "xml_engine.h"
+#include "endianness.h"
 
 #include "SimTKcommon.h"
 #include "SimTKmath.h"
@@ -58,15 +59,6 @@ namespace SPH
 	class BaseLevelSet;
 
 	/**
-	 * @brief Enum class for endianness of the system.
-	 */
-	enum class Endianness
-	{
-		little = 0,
-		big = 1,
-	};
-
-	/**
 	 * @class In_Output
 	 * @brief The base class which defines folders for output, 
 	 * restart and particle reload folders.
@@ -84,12 +76,6 @@ namespace SPH
 		std::string reload_folder_;
 
 		std::string restart_step_;
-
-		// Function to find the system's endianness
-		static inline Endianness getSystemEndianness();
-
-		// 
-		static inline void writeDataReverseEndianness(std::ofstream &file, const void *data, size_t bytes_count, size_t type_size);
 	};
 
 	/**
@@ -305,17 +291,13 @@ namespace SPH
 	{
 	public:
 		BodyStatesRecordingToLegacyVtk(In_Output &in_output, SPHBody &body)
-			: BodyStatesRecording(in_output, body) 
-		{
-			_endianness = In_Output::getSystemEndianness();
-		};
+			: BodyStatesRecording(in_output, body) {};
 		BodyStatesRecordingToLegacyVtk(In_Output &in_output, SPHBodyVector bodies, bool binary_out = true)
 			: BodyStatesRecording(in_output, bodies) {};
 		virtual ~BodyStatesRecordingToLegacyVtk(){};
 
 
 	protected:
-		Endianness _endianness;
 		virtual void writeWithFileName(const std::string &sequence) override;
 	};
 

@@ -79,9 +79,9 @@ namespace SPH
 		newly_updated_ = false;
 	}
 	//=================================================================================================//
-	void SPHBody::writeParticlesToBinLecVtkFile(std::ofstream &output_file, const Endianness &endianness)
+	void SPHBody::writeParticlesToBinLecVtkFile(std::ofstream &output_file)
 	{
-		base_particles_->writeParticlesToBinLecVtkFile(output_file, endianness);
+		base_particles_->writeParticlesToBinLecVtkFile(output_file);
 		newly_updated_ = false;
 	}
 	//=================================================================================================//
