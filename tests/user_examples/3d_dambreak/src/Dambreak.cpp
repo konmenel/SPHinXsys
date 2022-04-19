@@ -69,7 +69,7 @@ int main()
 	//outputs
 	//-----------------------------------------------------------------------------
 	In_Output in_output(system);
-	BodyStatesRecordingToVtp write_water_block_states(in_output, system.real_bodies_);
+	BodyStatesRecordingToLegacyVtk write_water_block_states(in_output, system.real_bodies_);
 	/** Output the body states for restart simulation. */
 	RestartIO restart_io(in_output, system.real_bodies_);
 	/** Output the mechanical energy of fluid body. */

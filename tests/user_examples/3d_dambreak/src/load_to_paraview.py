@@ -13,9 +13,9 @@ else:
 
 
 def open_files():
-    wall_re = re.compile(r'SPHBody_Wall_[0-9]+.vtp$')
-    builidng_re = re.compile(r'SPHBody_Building_[0-9]+.vtp$')
-    water_re = re.compile(r'SPHBody_WaterBody_[0-9]+.vtp$')
+    wall_re = re.compile(r'SPHBody_Wall_[0-9]+.vt[kpu]$')
+    builidng_re = re.compile(r'SPHBody_Building_[0-9]+.vt[kpu]$')
+    water_re = re.compile(r'SPHBody_WaterBody_[0-9]+.vt[kpu]$')
     wall_files = []
     builidng_files = []
     water_files = []
@@ -29,10 +29,12 @@ def open_files():
         elif builidng_re.fullmatch(name):
             builidng_files.append(PATH + name)
     
-    num_re = re.compile(r'_([0-9]+).vtp$')
+    num_re = re.compile(r'_([0-9]+).vt[kpu]$')
     water_files.sort(key=lambda x: int(num_re.findall(x)[0]))
 
-    return (OpenDataFile(wall_files), OpenDataFile(builidng_files), OpenDataFile(water_files), 
+    return (OpenDataFile(wall_files),
+            OpenDataFile(builidng_files),
+            OpenDataFile(water_files), 
             len(water_files))
 
 
@@ -62,7 +64,7 @@ Show(building, view)
 
 display_w = Show(water)
 
-ColorBy(display_w, ('POINTS', 'Velocity'), separate = True)
+ColorBy(display_w, ('POINTS', 'Velocity'), separate=True)
 water_color_func = GetColorTransferFunction('Velocity', display_w, separate=True)
 water_color_func.ApplyPreset('Jet', True)
 
