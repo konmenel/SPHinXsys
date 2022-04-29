@@ -148,7 +148,7 @@ namespace SPH
 				{
 					fs::remove(filefullpath);
 				}
-				std::ofstream out_file(filefullpath.c_str(), std::ios::trunc | std::ios::binary | std::ios::out);
+				std::ofstream out_file(filefullpath.c_str(), std::ios::trunc | std::ios::binary);
 				//begin of the Legacy VTK file
 				out_file << "# vtk DataFile Version 3.0\n";
 				out_file << body->getBodyName() << " output\n";
