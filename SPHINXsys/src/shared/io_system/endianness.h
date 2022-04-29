@@ -54,7 +54,3 @@ namespace SPH
             std::ofstream &file, const void *data, size_t bytes_count, size_t type_size);
     };
 } // namespace SPH
-
-#include "endianness.inl"
-
-    
