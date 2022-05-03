@@ -26,7 +26,7 @@ int main()
 	for (int i = 0; i < 9; i++)
 		position[i] = rand() / (double)RAND_MAX;
 	//create a new VTK file
-	ofstream vtk_file("test_vtk.vtk");
+	ofstream vtk_file("test_vtk.vtk", ios::binary);
 	//write the header
 	vtk_file << "# vtk DataFile Version 3.0" << endl;
 	vtk_file << "Test data" << endl;
