@@ -340,8 +340,29 @@ namespace SPH
 	//=================================================================================================//
 	void BaseParticles::writeParticlesToBinLecVtkFile(std::ofstream &output_file)
 	{
+		// Getting the endianness of the machine
 		const static Endianness endianness = Endian::getSystemEndianness();
+
+		// Create the buffers
+		const int BUFF_CAP = 1024;
+		float bufferf[BUFF_CAP];
+		int32_t bufferi[BUFF_CAP];
+		uint32_t bufferui[BUFF_CAP];
+		size_t bufferf_size = 0;
+		size_t bufferi_size = 0;
+		size_t bufferui_size = 0;
+		
 		size_t total_real_particles = total_real_particles_;
+
+		//function to flush the buffer
+		auto flush_buffer = [&output_file](void *buf, size_t bytes_count, size_t type_size)
+		{
+			if (endianness == Endianness::little) {
+				Endian::writeDataReverseEndianness(output_file, buf, bytes_count, type_size);
+			} else {
+				output_file.write(reinterpret_cast<const char *>(buf), bytes_count);
+			}
+		};
 
 		//write current/final particle positions first
 		output_file << "POINTS " << total_real_particles << " float\n";
@@ -350,24 +371,48 @@ namespace SPH
 			Vec3d particle_position = upgradeToVector3D(pos_n_[i]);
 			for (size_t j = 0; j < 3; ++j)
 			{
-				float part_pos_float = static_cast<float>(particle_position[j]);
+				bufferf[bufferf_size++] = static_cast<float>(particle_position[j]);
 
-				if (endianness == Endianness::little) {
-					Endian::writeDataReverseEndianness(output_file, &part_pos_float, sizeof(float), sizeof(float));
-				} else {
-					output_file.write(reinterpret_cast<const char *>(&part_pos_float), sizeof(float));
+				if (bufferf_size == BUFF_CAP) {
+					flush_buffer(bufferf, bufferf_size * sizeof(float), sizeof(float));
+					bufferf_size = 0;
 				}
+				// if (endianness == Endianness::little) {
+				// 	Endian::writeDataReverseEndianness(output_file, &part_pos_float, sizeof(float), sizeof(float));
+				// } else {
+				// 	output_file.write(reinterpret_cast<const char *>(&part_pos_float), sizeof(float));
+				// }
 			}
+		}
+		if (bufferf_size > 0) {
+			flush_buffer(bufferf, bufferf_size * sizeof(float), sizeof(float));
+			bufferf_size = 0;
 		}
 		output_file << "\n";
 
-			//write the vertices
-		int number_of_points = 1;
+		//write the vertices
+		const int32_t number_of_points = 1;
 		output_file << "VERTICES " << total_real_particles << " " << total_real_particles * 2 << "\n";
-		for (size_t i = 0; i != total_real_particles; ++i)
+		for (int32_t i = 0; i != total_real_particles; ++i)
 		{
-			Endian::writeDataReverseEndianness(output_file, &number_of_points, sizeof(int), sizeof(int));
-			Endian::writeDataReverseEndianness(output_file, &i, sizeof(int), sizeof(int));
+			bufferi[bufferi_size++] = number_of_points;
+
+			if  (bufferi_size == BUFF_CAP) {
+				flush_buffer(bufferi, bufferi_size * sizeof(int32_t), sizeof(int32_t));
+				bufferi_size = 0;
+			}
+
+			bufferi[bufferi_size++] = i;
+			if  (bufferi_size == BUFF_CAP) {
+				flush_buffer(bufferi, bufferi_size * sizeof(int32_t), sizeof(int32_t));
+				bufferi_size = 0;
+			}
+			// Endian::writeDataReverseEndianness(output_file, &number_of_points, sizeof(int), sizeof(int));
+			// Endian::writeDataReverseEndianness(output_file, &i, sizeof(int), sizeof(int));
+		}
+		if (bufferi_size > 0) {
+			flush_buffer(bufferi, bufferi_size * sizeof(int32_t), sizeof(int32_t));
+			bufferi_size = 0;
 		}
 		output_file << "\n";
 
@@ -376,14 +421,24 @@ namespace SPH
 		output_file << "POINT_DATA " << total_real_particles << "\n";
 		output_file << "SCALARS Particle_ID unsigned_int\n";
 		output_file << "LOOKUP_TABLE default\n";
-		for (unsigned int i = 0; i != total_real_particles; ++i)
+		for (uint32_t i = 0; i != total_real_particles; ++i)
 		{
-			if (endianness == Endianness::little) {
-				Endian::writeDataReverseEndianness(output_file, &i,
-					sizeof(unsigned int), sizeof(unsigned int));
-			} else {
-				output_file.write(reinterpret_cast<const char *>(&i), sizeof(unsigned int));
+			bufferui[bufferui_size++] = i;
+
+			if  (bufferui_size == BUFF_CAP) {
+				flush_buffer(bufferui, bufferui_size * sizeof(uint32_t), sizeof(uint32_t));
+				bufferui_size = 0;
 			}
+			// if (endianness == Endianness::little) {
+			// 	Endian::writeDataReverseEndianness(output_file, &i,
+			// 		sizeof(uint32_t), sizeof(uint32_t));
+			// } else {
+			// 	output_file.write(reinterpret_cast<const char *>(&i), sizeof(uint32_t));
+			// }
+		}
+		if (bufferui_size > 0) {
+			flush_buffer(bufferui, bufferui_size * sizeof(uint32_t), sizeof(uint32_t));
+			bufferui_size = 0;
 		}
 		output_file << "\n";
 
@@ -392,14 +447,24 @@ namespace SPH
 		output_file << "LOOKUP_TABLE default\n";
 		for (size_t i = 0; i != total_real_particles; ++i)
 		{
-			unsigned int id = unsorted_id_[i];
-			if (endianness == Endianness::little) {
-				Endian::writeDataReverseEndianness(output_file, 
-					reinterpret_cast<const char *>(&id),
-					sizeof(unsigned int), sizeof(unsigned int));
-			} else {
-				output_file.write(reinterpret_cast<const char *>(&id), sizeof(unsigned int));
+			bufferui[bufferui_size++] = unsorted_id_[i];
+
+			if  (bufferui_size == BUFF_CAP) {
+				flush_buffer(bufferui, bufferui_size * sizeof(uint32_t), sizeof(uint32_t));
+				bufferui_size = 0;
 			}
+			// uint32_t id = unsorted_id_[i];
+			// if (endianness == Endianness::little) {
+			// 	Endian::writeDataReverseEndianness(output_file, 
+			// 		reinterpret_cast<const char *>(&id),
+			// 		sizeof(uint32_t), sizeof(uint32_t));
+			// } else {
+			// 	output_file.write(reinterpret_cast<const char *>(&id), sizeof(uint32_t));
+			// }
+		}
+		if (bufferui_size > 0) {
+			flush_buffer(bufferui, bufferui_size * sizeof(uint32_t), sizeof(uint32_t));
+			bufferui_size = 0;
 		}
 		output_file << "\n";
 
@@ -428,16 +493,25 @@ namespace SPH
 
 					for (int j = 0; j < 3; ++j)
 					{
-						float elem_float = static_cast<float>(col_vector[j]);
+						bufferf[bufferf_size++] = static_cast<float>(col_vector[j]);
 
-						if (endianness == Endianness::little) {
-							Endian::writeDataReverseEndianness(output_file, &elem_float,
-								sizeof(float), sizeof(float));
-						} else {
-							output_file.write(reinterpret_cast<const char *>(&elem_float), sizeof(float));
+						if  (bufferf_size == BUFF_CAP) {
+							flush_buffer(bufferf, bufferf_size * sizeof(float), sizeof(float));
+							bufferf_size = 0;
 						}
+
+						// if (endianness == Endianness::little) {
+						// 	Endian::writeDataReverseEndianness(output_file, &elem_float,
+						// 		sizeof(float), sizeof(float));
+						// } else {
+						// 	output_file.write(reinterpret_cast<const char *>(&elem_float), sizeof(float));
+						// }
 					}
 				}
+			}
+			if (bufferf_size > 0) {
+				flush_buffer(bufferf, bufferf_size * sizeof(float), sizeof(float));
+				bufferf_size = 0;
 			}
 			output_file << "\n";
 		}
@@ -457,15 +531,24 @@ namespace SPH
 				
 				for (int j = 0; j < 3; ++j)
 				{
-					float elem_float = static_cast<float>(vector_value[j]);
+					bufferf[bufferf_size++] = static_cast<float>(vector_value[j]);
 
-					if (endianness == Endianness::little) {
-						Endian::writeDataReverseEndianness(output_file, &elem_float,
-							sizeof(float), sizeof(float));
-					} else {
-						output_file.write(reinterpret_cast<const char *>(&elem_float), sizeof(float));
+					if  (bufferf_size == BUFF_CAP) {
+						flush_buffer(bufferf, bufferf_size * sizeof(float), sizeof(float));
+						bufferf_size = 0;
 					}
+
+					// if (endianness == Endianness::little) {
+					// 	Endian::writeDataReverseEndianness(output_file, &elem_float,
+					// 		sizeof(float), sizeof(float));
+					// } else {
+					// 	output_file.write(reinterpret_cast<const char *>(&elem_float), sizeof(float));
+					// }
 				}
+			}
+			if (bufferf_size > 0) {
+				flush_buffer(bufferf, bufferf_size * sizeof(float), sizeof(float));
+				bufferf_size = 0;
 			}
 			output_file << "\n";
 		}
@@ -481,14 +564,23 @@ namespace SPH
 
 			for (size_t i = 0; i != total_real_particles; ++i)
 			{
-				float scalar_value = static_cast<float>(variable[i]);
+				bufferf[bufferf_size++] = static_cast<float>(variable[i]);
 
-				if (endianness == Endianness::little) {
-					Endian::writeDataReverseEndianness(output_file, &scalar_value,
-						sizeof(float), sizeof(float));
-				} else {
-					output_file.write(reinterpret_cast<const char *>(&scalar_value), sizeof(float));
+				if  (bufferf_size == BUFF_CAP) {
+					flush_buffer(bufferf, bufferf_size * sizeof(float), sizeof(float));
+					bufferf_size = 0;
 				}
+
+				// if (endianness == Endianness::little) {
+				// 	Endian::writeDataReverseEndianness(output_file, &scalar_value,
+				// 		sizeof(float), sizeof(float));
+				// } else {
+				// 	output_file.write(reinterpret_cast<const char *>(&scalar_value), sizeof(float));
+				// }
+			}
+			if (bufferf_size > 0) {
+				flush_buffer(bufferf, bufferf_size * sizeof(float), sizeof(float));
+				bufferf_size = 0;
 			}
 			output_file << "\n";
 		}
@@ -505,14 +597,23 @@ namespace SPH
 			for (size_t i = 0; i != total_real_particles; ++i)
 			{
 				// make sure correct number of bytes are written
-				int integer_value = variable[i];
+				bufferi[bufferi_size++] = variable[i];
 
-				if (endianness == Endianness::little) {
-					Endian::writeDataReverseEndianness(output_file, &integer_value,
-						sizeof(int), sizeof(int));
-				} else {
-					output_file.write(reinterpret_cast<const char *>(&integer_value), sizeof(int));
+				if  (bufferi_size == BUFF_CAP) {
+					flush_buffer(bufferi, bufferi_size * sizeof(int), sizeof(int));
+					bufferi_size = 0;
 				}
+
+				// if (endianness == Endianness::little) {
+				// 	Endian::writeDataReverseEndianness(output_file, &integer_value,
+				// 		sizeof(int), sizeof(int));
+				// } else {
+				// 	output_file.write(reinterpret_cast<const char *>(&integer_value), sizeof(int));
+				// }
+			}
+			if (bufferi_size > 0) {
+				flush_buffer(bufferi, bufferi_size * sizeof(int), sizeof(int));
+				bufferi_size = 0;
 			}
 			output_file << "\n";
 		}
