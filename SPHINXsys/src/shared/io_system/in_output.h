@@ -287,6 +287,11 @@ namespace SPH
 		virtual void writeWithFileName(const std::string &sequence) override;
 	};
 
+	/**
+	 * @class BodyStatesRecordingToLegacyVtk
+	 * @brief  Write files for bodies
+	 * the output file is legacy VTK in binary format can visualized by ParaView the data type vtkPolyData
+	 */
 	class BodyStatesRecordingToLegacyVtk : public BodyStatesRecording
 	{
 	public:
