@@ -377,11 +377,6 @@ namespace SPH
 					flush_buffer(bufferf, bufferf_size * sizeof(float), sizeof(float));
 					bufferf_size = 0;
 				}
-				// if (endianness == Endianness::little) {
-				// 	Endian::writeDataReverseEndianness(output_file, &part_pos_float, sizeof(float), sizeof(float));
-				// } else {
-				// 	output_file.write(reinterpret_cast<const char *>(&part_pos_float), sizeof(float));
-				// }
 			}
 		}
 		if (bufferf_size > 0) {
@@ -407,8 +402,6 @@ namespace SPH
 				flush_buffer(bufferi, bufferi_size * sizeof(int32_t), sizeof(int32_t));
 				bufferi_size = 0;
 			}
-			// Endian::writeDataReverseEndianness(output_file, &number_of_points, sizeof(int), sizeof(int));
-			// Endian::writeDataReverseEndianness(output_file, &i, sizeof(int), sizeof(int));
 		}
 		if (bufferi_size > 0) {
 			flush_buffer(bufferi, bufferi_size * sizeof(int32_t), sizeof(int32_t));
@@ -429,12 +422,6 @@ namespace SPH
 				flush_buffer(bufferui, bufferui_size * sizeof(uint32_t), sizeof(uint32_t));
 				bufferui_size = 0;
 			}
-			// if (endianness == Endianness::little) {
-			// 	Endian::writeDataReverseEndianness(output_file, &i,
-			// 		sizeof(uint32_t), sizeof(uint32_t));
-			// } else {
-			// 	output_file.write(reinterpret_cast<const char *>(&i), sizeof(uint32_t));
-			// }
 		}
 		if (bufferui_size > 0) {
 			flush_buffer(bufferui, bufferui_size * sizeof(uint32_t), sizeof(uint32_t));
@@ -453,14 +440,6 @@ namespace SPH
 				flush_buffer(bufferui, bufferui_size * sizeof(uint32_t), sizeof(uint32_t));
 				bufferui_size = 0;
 			}
-			// uint32_t id = unsorted_id_[i];
-			// if (endianness == Endianness::little) {
-			// 	Endian::writeDataReverseEndianness(output_file, 
-			// 		reinterpret_cast<const char *>(&id),
-			// 		sizeof(uint32_t), sizeof(uint32_t));
-			// } else {
-			// 	output_file.write(reinterpret_cast<const char *>(&id), sizeof(uint32_t));
-			// }
 		}
 		if (bufferui_size > 0) {
 			flush_buffer(bufferui, bufferui_size * sizeof(uint32_t), sizeof(uint32_t));
@@ -499,13 +478,6 @@ namespace SPH
 							flush_buffer(bufferf, bufferf_size * sizeof(float), sizeof(float));
 							bufferf_size = 0;
 						}
-
-						// if (endianness == Endianness::little) {
-						// 	Endian::writeDataReverseEndianness(output_file, &elem_float,
-						// 		sizeof(float), sizeof(float));
-						// } else {
-						// 	output_file.write(reinterpret_cast<const char *>(&elem_float), sizeof(float));
-						// }
 					}
 				}
 			}
@@ -537,13 +509,6 @@ namespace SPH
 						flush_buffer(bufferf, bufferf_size * sizeof(float), sizeof(float));
 						bufferf_size = 0;
 					}
-
-					// if (endianness == Endianness::little) {
-					// 	Endian::writeDataReverseEndianness(output_file, &elem_float,
-					// 		sizeof(float), sizeof(float));
-					// } else {
-					// 	output_file.write(reinterpret_cast<const char *>(&elem_float), sizeof(float));
-					// }
 				}
 			}
 			if (bufferf_size > 0) {
@@ -570,13 +535,6 @@ namespace SPH
 					flush_buffer(bufferf, bufferf_size * sizeof(float), sizeof(float));
 					bufferf_size = 0;
 				}
-
-				// if (endianness == Endianness::little) {
-				// 	Endian::writeDataReverseEndianness(output_file, &scalar_value,
-				// 		sizeof(float), sizeof(float));
-				// } else {
-				// 	output_file.write(reinterpret_cast<const char *>(&scalar_value), sizeof(float));
-				// }
 			}
 			if (bufferf_size > 0) {
 				flush_buffer(bufferf, bufferf_size * sizeof(float), sizeof(float));
@@ -603,13 +561,6 @@ namespace SPH
 					flush_buffer(bufferi, bufferi_size * sizeof(int), sizeof(int));
 					bufferi_size = 0;
 				}
-
-				// if (endianness == Endianness::little) {
-				// 	Endian::writeDataReverseEndianness(output_file, &integer_value,
-				// 		sizeof(int), sizeof(int));
-				// } else {
-				// 	output_file.write(reinterpret_cast<const char *>(&integer_value), sizeof(int));
-				// }
 			}
 			if (bufferi_size > 0) {
 				flush_buffer(bufferi, bufferi_size * sizeof(int), sizeof(int));
