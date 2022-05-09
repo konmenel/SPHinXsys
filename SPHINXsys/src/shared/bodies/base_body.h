@@ -43,6 +43,7 @@
 #include "particle_sorting.h"
 #include "all_geometries.h"
 #include "generative_structures.h"
+#include "endianness.h"
 
 #include <string>
 
@@ -119,6 +120,7 @@ namespace SPH
 
 		virtual void writeParticlesToVtuFile(std::ostream &output_file);	
 		virtual void writeParticlesToVtpFile(std::ofstream &output_file);
+		virtual void writeParticlesToBinLecVtkFile(std::ofstream &output_file);
 		virtual void writeParticlesToPltFile(std::ofstream &output_file);
 		virtual void writeSurfaceParticlesToVtuFile(std::ofstream &output_file, BodySurface& surface_particles);
 		virtual void writeParticlesToXmlForRestart(std::string &filefullpath);

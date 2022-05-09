@@ -79,6 +79,12 @@ namespace SPH
 		newly_updated_ = false;
 	}
 	//=================================================================================================//
+	void SPHBody::writeParticlesToBinLecVtkFile(std::ofstream &output_file)
+	{
+		base_particles_->writeParticlesToBinLecVtkFile(output_file);
+		newly_updated_ = false;
+	}
+	//=================================================================================================//
 	void SPHBody::writeSurfaceParticlesToVtuFile(std::ofstream &output_file, BodySurface& surface_particles)
 	{
 		base_particles_->writeSurfaceParticlesToVtuFile(output_file, surface_particles);

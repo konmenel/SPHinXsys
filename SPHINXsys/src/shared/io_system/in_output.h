@@ -33,6 +33,7 @@
 #include "sph_data_containers.h"
 #include "all_physical_dynamics.h"
 #include "xml_engine.h"
+#include "endianness.h"
 
 #include "SimTKcommon.h"
 #include "SimTKmath.h"
@@ -52,7 +53,6 @@ namespace fs = std::experimental::filesystem;
 
 namespace SPH
 {
-
 	/**
 	 * @brief preclaimed classes.
 	 */
@@ -282,6 +282,25 @@ namespace SPH
 		BodyStatesRecordingToVtp(In_Output &in_output, SPHBodyVector bodies)
 			: BodyStatesRecording(in_output, bodies){};
 		virtual ~BodyStatesRecordingToVtp(){};
+
+	protected:
+		virtual void writeWithFileName(const std::string &sequence) override;
+	};
+
+	/**
+	 * @class BodyStatesRecordingToLegacyVtk
+	 * @brief  Write files for bodies
+	 * the output file is legacy VTK in binary format can visualized by ParaView the data type vtkPolyData
+	 */
+	class BodyStatesRecordingToLegacyVtk : public BodyStatesRecording
+	{
+	public:
+		BodyStatesRecordingToLegacyVtk(In_Output &in_output, SPHBody &body)
+			: BodyStatesRecording(in_output, body) {};
+		BodyStatesRecordingToLegacyVtk(In_Output &in_output, SPHBodyVector bodies, bool binary_out = true)
+			: BodyStatesRecording(in_output, bodies) {};
+		virtual ~BodyStatesRecordingToLegacyVtk(){};
+
 
 	protected:
 		virtual void writeWithFileName(const std::string &sequence) override;
@@ -618,6 +637,25 @@ namespace SPH
 	public:
 		WriteSimBodyPinData(In_Output &in_output, SimTK::RungeKuttaMersonIntegrator &integ, SimTK::MobilizedBody::Pin &pinbody);
 		virtual ~WriteSimBodyPinData(){};
+		virtual void writeToFile(size_t iteration_step = 0) override;
+	};
+
+	/**
+	 * @class WriteSimBodyFreeData
+	* @brief Position and velocity of Free MobilizedBody.
+	*/
+	class WriteSimBodyFreeData : public WriteSimBodyStates<SimTK::MobilizedBody::Free>
+	{
+	protected:
+		std::string filefullpath_;
+		SimTK::MultibodySystem &mb_system_;
+
+	public:
+		WriteSimBodyFreeData(In_Output &in_output,
+							 SimTK::RungeKuttaMersonIntegrator &integ,
+							 SimTK::MobilizedBody::Free &freebody,
+							 SimTK::MultibodySystem &mb_system);
+		virtual ~WriteSimBodyFreeData(){};
 		virtual void writeToFile(size_t iteration_step = 0) override;
 	};
 

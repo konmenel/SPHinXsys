@@ -338,6 +338,238 @@ namespace SPH
 		}
 	}
 	//=================================================================================================//
+	void BaseParticles::writeParticlesToBinLecVtkFile(std::ofstream &output_file)
+	{
+		// Getting the endianness of the machine
+		const static Endianness endianness = Endian::getSystemEndianness();
+
+		// Create the buffers
+		const int BUFF_CAP = 1024;
+		float bufferf[BUFF_CAP];
+		int32_t bufferi[BUFF_CAP];
+		uint32_t bufferui[BUFF_CAP];
+		size_t bufferf_size = 0;
+		size_t bufferi_size = 0;
+		size_t bufferui_size = 0;
+		
+		size_t total_real_particles = total_real_particles_;
+
+		//function to flush the buffer
+		auto flush_buffer = [&output_file](void *buf, size_t bytes_count, size_t type_size)
+		{
+			if (endianness == Endianness::little) {
+				Endian::writeDataReverseEndianness(output_file, buf, bytes_count, type_size);
+			} else {
+				output_file.write(reinterpret_cast<const char *>(buf), bytes_count);
+			}
+		};
+
+		//write current/final particle positions first
+		output_file << "POINTS " << total_real_particles << " float\n";
+		for (size_t i = 0; i != total_real_particles; ++i)
+		{
+			Vec3d particle_position = upgradeToVector3D(pos_n_[i]);
+			for (size_t j = 0; j < 3; ++j)
+			{
+				bufferf[bufferf_size++] = static_cast<float>(particle_position[j]);
+
+				if (bufferf_size == BUFF_CAP) {
+					flush_buffer(bufferf, bufferf_size * sizeof(float), sizeof(float));
+					bufferf_size = 0;
+				}
+			}
+		}
+		if (bufferf_size > 0) {
+			flush_buffer(bufferf, bufferf_size * sizeof(float), sizeof(float));
+			bufferf_size = 0;
+		}
+		output_file << "\n";
+
+		//write the vertices
+		const int32_t number_of_points = 1;
+		output_file << "VERTICES " << total_real_particles << " " << total_real_particles * 2 << "\n";
+		for (int32_t i = 0; i != total_real_particles; ++i)
+		{
+			bufferi[bufferi_size++] = number_of_points;
+
+			if  (bufferi_size == BUFF_CAP) {
+				flush_buffer(bufferi, bufferi_size * sizeof(int32_t), sizeof(int32_t));
+				bufferi_size = 0;
+			}
+
+			bufferi[bufferi_size++] = i;
+			if  (bufferi_size == BUFF_CAP) {
+				flush_buffer(bufferi, bufferi_size * sizeof(int32_t), sizeof(int32_t));
+				bufferi_size = 0;
+			}
+		}
+		if (bufferi_size > 0) {
+			flush_buffer(bufferi, bufferi_size * sizeof(int32_t), sizeof(int32_t));
+			bufferi_size = 0;
+		}
+		output_file << "\n";
+
+
+		//write sorted particles ID
+		output_file << "POINT_DATA " << total_real_particles << "\n";
+		output_file << "SCALARS Particle_ID unsigned_int\n";
+		output_file << "LOOKUP_TABLE default\n";
+		for (uint32_t i = 0; i != total_real_particles; ++i)
+		{
+			bufferui[bufferui_size++] = i;
+
+			if  (bufferui_size == BUFF_CAP) {
+				flush_buffer(bufferui, bufferui_size * sizeof(uint32_t), sizeof(uint32_t));
+				bufferui_size = 0;
+			}
+		}
+		if (bufferui_size > 0) {
+			flush_buffer(bufferui, bufferui_size * sizeof(uint32_t), sizeof(uint32_t));
+			bufferui_size = 0;
+		}
+		output_file << "\n";
+
+		//write unsorted particles ID
+		output_file << "SCALARS UnsortedParticle_ID unsigned_int\n";
+		output_file << "LOOKUP_TABLE default\n";
+		for (size_t i = 0; i != total_real_particles; ++i)
+		{
+			bufferui[bufferui_size++] = unsorted_id_[i];
+
+			if  (bufferui_size == BUFF_CAP) {
+				flush_buffer(bufferui, bufferui_size * sizeof(uint32_t), sizeof(uint32_t));
+				bufferui_size = 0;
+			}
+		}
+		if (bufferui_size > 0) {
+			flush_buffer(bufferui, bufferui_size * sizeof(uint32_t), sizeof(uint32_t));
+			bufferui_size = 0;
+		}
+		output_file << "\n";
+
+		//write header of field data
+		int fields_size = variables_to_write_[indexMatrix].size()
+			+ variables_to_write_[indexVector].size()
+			+ variables_to_write_[indexScalar].size()
+			+ variables_to_write_[indexInteger].size();
+		output_file << "FIELD FieldData " << fields_size << "\n";
+
+		//write matrices
+		for (std::pair<std::string, size_t> &name_index : variables_to_write_[indexMatrix])
+		{
+			std::string variable_name = name_index.first;
+			StdLargeVec<Matd> &variable = *(std::get<indexMatrix>(all_particle_data_)[name_index.second]);
+
+			// write header
+			output_file << variable_name << " 9 " << total_real_particles << " float\n";
+			
+			for (size_t i = 0; i != total_real_particles; ++i)
+			{
+				Mat3d matrix_value = upgradeToMatrix3D(variable[i]);
+				for (int k = 0; k != 3; ++k)
+				{
+					Vec3d col_vector = matrix_value.col(k);
+
+					for (int j = 0; j < 3; ++j)
+					{
+						bufferf[bufferf_size++] = static_cast<float>(col_vector[j]);
+
+						if  (bufferf_size == BUFF_CAP) {
+							flush_buffer(bufferf, bufferf_size * sizeof(float), sizeof(float));
+							bufferf_size = 0;
+						}
+					}
+				}
+			}
+			if (bufferf_size > 0) {
+				flush_buffer(bufferf, bufferf_size * sizeof(float), sizeof(float));
+				bufferf_size = 0;
+			}
+			output_file << "\n";
+		}
+
+		//write vectors
+		for (std::pair<std::string, size_t> &name_index : variables_to_write_[indexVector])
+		{
+			std::string variable_name = name_index.first;
+			StdLargeVec<Vecd> &variable = *(std::get<indexVector>(all_particle_data_)[name_index.second]);
+			
+			// write header
+			output_file << variable_name << " 3 " << total_real_particles << " float\n";
+
+			for (size_t i = 0; i != total_real_particles; ++i)
+			{
+				Vec3d vector_value = upgradeToVector3D(variable[i]);
+				
+				for (int j = 0; j < 3; ++j)
+				{
+					bufferf[bufferf_size++] = static_cast<float>(vector_value[j]);
+
+					if  (bufferf_size == BUFF_CAP) {
+						flush_buffer(bufferf, bufferf_size * sizeof(float), sizeof(float));
+						bufferf_size = 0;
+					}
+				}
+			}
+			if (bufferf_size > 0) {
+				flush_buffer(bufferf, bufferf_size * sizeof(float), sizeof(float));
+				bufferf_size = 0;
+			}
+			output_file << "\n";
+		}
+
+		//write scalars
+		for (std::pair<std::string, size_t> &name_index : variables_to_write_[indexScalar])
+		{
+			std::string variable_name = name_index.first;
+			StdLargeVec<Real> &variable = *(std::get<indexScalar>(all_particle_data_)[name_index.second]);
+
+			// write header
+			output_file << variable_name << " 1 " << total_real_particles << " float\n";
+
+			for (size_t i = 0; i != total_real_particles; ++i)
+			{
+				bufferf[bufferf_size++] = static_cast<float>(variable[i]);
+
+				if  (bufferf_size == BUFF_CAP) {
+					flush_buffer(bufferf, bufferf_size * sizeof(float), sizeof(float));
+					bufferf_size = 0;
+				}
+			}
+			if (bufferf_size > 0) {
+				flush_buffer(bufferf, bufferf_size * sizeof(float), sizeof(float));
+				bufferf_size = 0;
+			}
+			output_file << "\n";
+		}
+
+		//write integers
+		for (std::pair<std::string, size_t> &name_index : variables_to_write_[indexInteger])
+		{
+			std::string variable_name = name_index.first;
+			StdLargeVec<int> &variable = *(std::get<indexInteger>(all_particle_data_)[name_index.second]);
+			
+			// write header
+			output_file << variable_name << " 1 " << total_real_particles << " int\n";
+
+			for (size_t i = 0; i != total_real_particles; ++i)
+			{
+				// make sure correct number of bytes are written
+				bufferi[bufferi_size++] = variable[i];
+
+				if  (bufferi_size == BUFF_CAP) {
+					flush_buffer(bufferi, bufferi_size * sizeof(int), sizeof(int));
+					bufferi_size = 0;
+				}
+			}
+			if (bufferi_size > 0) {
+				flush_buffer(bufferi, bufferi_size * sizeof(int), sizeof(int));
+				bufferi_size = 0;
+			}
+			output_file << "\n";
+		}
+	}
+	//=================================================================================================//
 	void BaseParticles::writePltFileHeader(std::ofstream &output_file)
 	{
 		output_file << " VARIABLES = \"x\",\"y\",\"z\",\"ID\"";
