@@ -1,6 +1,6 @@
 /**
  * @file 	endianness.cpp
- * @brief 	Classes for system endianness.
+ * @brief 	Class and Enum declarations for system endianness.
  * @author	Constantinos Menelaou
  */
 #pragma once

@@ -1,6 +1,6 @@
 /**
- * @file 	endianness.inl
- * @brief 	Inline definitions for Endian class.
+ * @file 	endianness.cpp
+ * @brief 	Definitions for Endian class.
  * @author	Constantinos Menelaou
  */
 #include "endianness.h"
