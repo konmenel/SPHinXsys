@@ -8,20 +8,20 @@ using namespace SPH;
 //for geometry
 const Real resolution_ref = 5.0e-3;	  	//particle spacing
 const Real BW = resolution_ref * 4; 	//boundary width
-const Real DL = 6.0;			  		//tank length
+const Real DL = 4.0;			  		//tank length
 const Real DH = 0.5;				  	//tank height
 const Real DW = 0.3;				  	//tank width
-const Real LL = 3.0;				  	//liquid length
-const Real LH = 0.4;				  	//liquid height
+const Real LL = 1.5;				  	//liquid length
+const Real LH = 0.2;				  	//liquid height
 const Real LW = 0.3;				  	//liquid width
-const Real BDL = 1.5e-2;				//boulder length
-const Real BDH = 3.0e-2;				//boulder height
-const Real BDW = 2.0e-2;				//boulder width
-const Real VWx = 4.0;					//verical wall x position
+const Real BDL = 3.0e-2;				//boulder length
+const Real BDH = 2.0e-2;				//boulder height
+const Real BDW = 1.5e-2;				//boulder width
+const Real VWx = 2.0;					//verical wall x position
 const Real VWH = 0.2;					//verical wall height
 const Real BDx = 0.8;				  	//boulder x position
 const Real BDy = DW/2.0;				//boulder y position
-const Real BDz = 0.1;				  	//boulder z position
+const Real BDz = 0.0;				  	//boulder z position
 
 // x="0.9" y="0.24" z="0"
 // x="0.12" y="0.12" z="0.45" 
@@ -65,42 +65,46 @@ void addSimbodyWallContacts(SimTK::SimbodyMatterSubsystem& matter,
 	using SimTK::ZAxis;
 
 	const SimTK::ContactGeometry::HalfSpace half_space;
-	// Left wall
-	const SimTK::Rotation R_left(Pi, ZAxis);
-	matter.Ground().updBody().addContactSurface(
-		SimTK::Transform(R_left),
-        SimTK::ContactSurface(half_space, contact_material)
-                       .joinClique(clique));
+
+	// // Left wall
+	// const SimTK::Rotation R_left(Pi, ZAxis);
+	// matter.Ground().updBody().addContactSurface(
+	// 	SimTK::Transform(R_left),
+    //     SimTK::ContactSurface(half_space, contact_material)
+    //                    .joinClique(clique));
+	
 	// Floor
-	const SimTK::Rotation R_floor(-Pi/2.0, YAxis);
+	const SimTK::Rotation R_floor(Pi * 0.5, YAxis);
 	matter.Ground().updBody().addContactSurface(
 		SimTK::Transform(R_floor),
         SimTK::ContactSurface(half_space, contact_material)
                        .joinClique(clique));
-	// Ceiling
-	const SimTK::Rotation R_ceiling(Pi/2.0, YAxis);
-	matter.Ground().updBody().addContactSurface(
-		SimTK::Transform(R_ceiling, Vec3d(0.0, 0.0, DH)),
-        SimTK::ContactSurface(half_space, contact_material)
-                       .joinClique(clique));
-	// Right wall
-	matter.Ground().updBody().addContactSurface(Vec3d(DL, 0.0, 0.0),
-        SimTK::ContactSurface(half_space, contact_material)
-                       .joinClique(clique));
 	
-	// Front wall
-	const SimTK::Rotation R_front(-Pi/2.0, ZAxis);
-	matter.Ground().updBody().addContactSurface(
-		SimTK::Transform(R_front),
-        SimTK::ContactSurface(half_space, contact_material)
-                       .joinClique(clique));
+	// // Ceiling
+	// const SimTK::Rotation R_ceiling(Pi * 0.5, YAxis);
+	// matter.Ground().updBody().addContactSurface(
+	// 	SimTK::Transform(R_ceiling, Vec3d(0.0, 0.0, DH)),
+    //     SimTK::ContactSurface(half_space, contact_material)
+    //                    .joinClique(clique));
 	
-	// Back wall
-	const SimTK::Rotation R_back(Pi/2.0, ZAxis);
-	matter.Ground().updBody().addContactSurface(
-		SimTK::Transform(R_back, Vec3d(0.0, DW, 0.0)),
-		SimTK::ContactSurface(half_space, contact_material)
-					   .joinClique(clique));
+	// // Right wall
+	// matter.Ground().updBody().addContactSurface(Vec3d(DL, 0.0, 0.0),
+    //     SimTK::ContactSurface(half_space, contact_material)
+    //                    .joinClique(clique));
+	
+	// // Front wall
+	// const SimTK::Rotation R_front(-Pi * 0.5, ZAxis);
+	// matter.Ground().updBody().addContactSurface(
+	// 	SimTK::Transform(R_front),
+    //     SimTK::ContactSurface(half_space, contact_material)
+    //                    .joinClique(clique));
+	
+	// // Back wall
+	// const SimTK::Rotation R_back(Pi * 0.5, ZAxis);
+	// matter.Ground().updBody().addContactSurface(
+	// 	SimTK::Transform(R_back, Vec3d(0.0, DW, 0.0)),
+	// 	SimTK::ContactSurface(half_space, contact_material)
+	// 				   .joinClique(clique));
 }
 
 void addCliffContactForSimbody(SimTK::SimbodyMatterSubsystem& matter,
@@ -116,7 +120,7 @@ void addCliffContactForSimbody(SimTK::SimbodyMatterSubsystem& matter,
 
 	// Add Contact surface to body
 	matter.Ground().updBody().addContactSurface(SimTK::Transform(Vec3d(VWx + 0.5*(DL - VWx), 0.5 * DW, 0.5 * VWH)),
-        SimTK::ContactSurface(cliff_geometry, contact_material, 1)
+        SimTK::ContactSurface(cliff_geometry, contact_material, 0.01)
 				.joinClique(clique));
 }
 
@@ -131,7 +135,7 @@ void addBoulderContactForSimbody(SimTK::Body::Rigid& boulder_body)
 	SimTK::ContactGeometry::TriangleMesh boulder_geo(brick_mesh);
 
 	boulder_body.addContactSurface(SimTK::Transform(),
-        SimTK::ContactSurface(boulder_geo, contact_material, 1));
+        SimTK::ContactSurface(boulder_geo, contact_material, 0.005));
 }
 
 //	define the fluid body

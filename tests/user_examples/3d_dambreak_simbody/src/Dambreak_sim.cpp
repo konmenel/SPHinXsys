@@ -18,10 +18,10 @@ int main()
 	/** Tag for computation from restart files. 0: not from restart files. */
 	system.restart_step_ = 0;
 
-	// //the water block
-	// WaterBlock water_block(system, "WaterBody");
-	// // create fluid particles
-	// FluidParticles fluid_particles(water_block, makeShared<WeaklyCompressibleFluid>(rho0_f, c_f, mu_f));
+	//the water block
+	WaterBlock water_block(system, "WaterBody");
+	// create fluid particles
+	FluidParticles fluid_particles(water_block, makeShared<WeaklyCompressibleFluid>(rho0_f, c_f, mu_f));
 
 	//the wall boundary
 	WallBoundary wall_boundary(system, "Wall");
@@ -34,33 +34,34 @@ int main()
 	ElasticSolidParticles boulder_particles(boulder, makeShared<LinearElasticSolid>(rho0_s, poisson, Youngs_modulus));
 	
 	/** topology */
-	// ComplexBodyRelation water_block_complex(water_block, {&wall_boundary, &boulder});
 	BodyRelationInner boulder_inner(boulder);
+	ComplexBodyRelation water_block_complex(water_block, {&wall_boundary, &boulder});
+	
 	solid_dynamics::CorrectConfiguration boulder_corrected_configuration(boulder_inner);
 
 	//-------------------------------------------------------------------
 	//this section define all numerical methods will be used in this case
 	//-------------------------------------------------------------------
 	//-------- common particle dynamics ----------------------------------------
-	// Gravity gravity(Vec3d(0.0, 0.0, -gravity_g));
-	// TimeStepInitialization initialize_a_fluid_step(water_block, gravity);
-	// //-------- fluid dynamics --------------------------------------------------
-	// //evaluation of density by summation approach
-	// fluid_dynamics::DensitySummationFreeSurfaceComplex update_density_by_summation(water_block_complex);
-	// //time step size without considering sound wave speed
-	// fluid_dynamics::AdvectionTimeStepSize get_fluid_advection_time_step_size(water_block, U_f);
-	// //time step size with considering sound wave speed
-	// fluid_dynamics::AcousticTimeStepSize get_fluid_time_step_size(water_block);
+	Gravity gravity(Vec3d(0.0, 0.0, -gravity_g));
+	TimeStepInitialization initialize_a_fluid_step(water_block, gravity);
+	//-------- fluid dynamics --------------------------------------------------
+	//evaluation of density by summation approach
+	fluid_dynamics::DensitySummationFreeSurfaceComplex update_density_by_summation(water_block_complex);
+	//time step size without considering sound wave speed
+	fluid_dynamics::AdvectionTimeStepSize get_fluid_advection_time_step_size(water_block, U_f);
+	//time step size with considering sound wave speed
+	fluid_dynamics::AcousticTimeStepSize get_fluid_time_step_size(water_block);
 
-	// //pressure relaxation using verlet time stepping
-	// fluid_dynamics::PressureRelaxationWithWall pressure_relaxation(water_block_complex);
-	// fluid_dynamics::DensityRelaxationWithWall density_relaxation(water_block_complex);
-	// /** Computing viscous acceleration. */
-	// // fluid_dynamics::ViscousAccelerationWithWall viscous_acceleration(water_block_complex);
-	// /** Impose transport velocity. */
-	// fluid_dynamics::TransportVelocityCorrectionComplex transport_velocity_correction(water_block_complex);
+	//pressure relaxation using verlet time stepping
+	fluid_dynamics::PressureRelaxationWithWall pressure_relaxation(water_block_complex);
+	fluid_dynamics::DensityRelaxationWithWall density_relaxation(water_block_complex);
+	/** Computing viscous acceleration. */
+	fluid_dynamics::ViscousAccelerationWithWall viscous_acceleration(water_block_complex);
+	/** Impose transport velocity. */
+	fluid_dynamics::TransportVelocityCorrectionComplex transport_velocity_correction(water_block_complex);
 	/** viscous acceleration and transport velocity correction can be combined because they are independent dynamics. */
-	// CombinedInteractionDynamics viscous_acceleration_and_transport_correction(viscous_acceleration, transport_velocity_correction);
+	CombinedInteractionDynamics viscous_acceleration_and_transport_correction(viscous_acceleration, transport_velocity_correction);
 	cout << "Simbody starting..." << endl;
 	// ----------------------------------------------------------------------------
 	//Simbody
@@ -144,9 +145,9 @@ int main()
 	write_water_block_states.writeToFile(0);
 
 	size_t number_of_iterations = system.restart_step_;
-	int screen_output_interval = 1;
+	int screen_output_interval = 200;
 	int restart_output_interval = screen_output_interval * 10;
-	Real End_Time = 1.6;
+	Real End_Time = 2.0;
 	//time step size for output file
 	Real D_Time = 0.01;
 	Real dt = 0.001; //default acoustic time step sizes
@@ -164,26 +165,33 @@ int main()
 		while (integration_time < D_Time)
 		{
 
-			// //acceleration due to viscous force and gravity
-			// initialize_a_fluid_step.parallel_exec();
-			// Real Dt = get_fluid_advection_time_step_size.parallel_exec();
-			// Dt = SMIN(Dt, D_Time - integration_time);
-			// update_density_by_summation.parallel_exec();
-			// // viscous_acceleration.parallel_exec();
-			// // viscous_acceleration_and_transport_correction.parallel_exec();
+			//acceleration due to viscous force and gravity
+			initialize_a_fluid_step.parallel_exec();
+			Real Dt = get_fluid_advection_time_step_size.parallel_exec();
+			Dt = SMIN(Dt, D_Time - integration_time);
+			update_density_by_summation.parallel_exec();
+			// viscous_acceleration.parallel_exec();
 			// transport_velocity_correction.parallel_exec();
+			viscous_acceleration_and_transport_correction.parallel_exec();
 
-			// Real relaxation_time = 0.0;
-			// while (relaxation_time < Dt)
-			// {
-			// 	pressure_relaxation.parallel_exec(dt);
-			// 	density_relaxation.parallel_exec(dt);
-			// 	dt = get_fluid_time_step_size.parallel_exec();
-			// 	dt = SMIN(dt, Dt - relaxation_time);
-			// 	relaxation_time += dt;
-			// 	integration_time += dt;
-			// 	GlobalStaticVariables::physical_time_ += dt;
-			// }
+			Real relaxation_time = 0.0;
+			while (relaxation_time < Dt)
+			{
+				pressure_relaxation.parallel_exec(dt);
+				density_relaxation.parallel_exec(dt);
+				dt = get_fluid_time_step_size.parallel_exec();
+				dt = SMIN(dt, Dt - relaxation_time);
+
+				SimTK::State& state_for_update = integ.updAdvancedState();
+				force_on_bodies.clearAllBodyForces(state_for_update);
+				force_on_bodies.setOneBodyForce(state_for_update, boulder_body, force_on_boulder.parallel_exec());
+				integ.stepBy(dt);
+				constraint_boulder.parallel_exec();
+
+				relaxation_time += dt;
+				integration_time += dt;
+				GlobalStaticVariables::physical_time_ += dt;
+			}
 
 			if (number_of_iterations % screen_output_interval == 0)
 			{
@@ -191,19 +199,11 @@ int main()
 						  << GlobalStaticVariables::physical_time_
 						  << "	dt = " << dt << "\n";
 			}
-
 			
-			SimTK::State& state_for_update = integ.updAdvancedState();
-			force_on_bodies.clearAllBodyForces(state_for_update);
-			force_on_bodies.setOneBodyForce(state_for_update, boulder_body, force_on_boulder.parallel_exec());
-			integ.stepBy(dt);
-			constraint_boulder.parallel_exec();
-			integration_time += dt;
-			GlobalStaticVariables::physical_time_ += dt;
 			number_of_iterations++;
 
-			// water_block.updateCellLinkedList();
-			// water_block_complex.updateConfiguration();
+			water_block.updateCellLinkedList();
+			water_block_complex.updateConfiguration();
 			// fluid_observer_contact.updateConfiguration();
 			// write_recorded_water_pressure.writeToFile(number_of_iterations);
 		}
