@@ -5,8 +5,8 @@ from pathlib import Path
 from paraview.simple import *
 
 
-PATH = Path(os.getenv('HOME')) / \
-    "SPHinXsys-build"/"cases_user"/"2d_dambreak_boulder_simbody_contact"
+PATH = Path(os.getenv('HOME')) / "SPHinXsys-build"/"tests"/"user_examples"/"2d_dambreak_boulder_simbody_contact"
+
 if sys.platform.startswith('linux'):
     PATH = str(PATH) + "/bin/output/"
 else:
@@ -14,9 +14,9 @@ else:
 
 
 def open_files():
-    wall_re = re.compile(r'SPHBody_Wall_[0-9.]+.vtu$')
-    boulder_re = re.compile(r'SPHBody_Boulder_[0-9.]+.vtu$')
-    water_re = re.compile(r'SPHBody_WaterBody_[0-9.]+.vtu$')
+    wall_re = re.compile(r'SPHBody_Wall_[0-9.]+.vt[upk]$')
+    boulder_re = re.compile(r'SPHBody_Boulder_[0-9.]+.vt[upk]$')
+    water_re = re.compile(r'SPHBody_WaterBody_[0-9.]+.vt[upk]$')
     wall_files = []
     boulder_files = []
     water_files = []
@@ -30,7 +30,7 @@ def open_files():
         elif wall_re.fullmatch(name):
             wall_files.append(PATH + name)
     
-    num_re = re.compile(r'_([0-9]+).vtu$')
+    num_re = re.compile(r'_([0-9]+).vt[upk]$')
     for list_ in [water_files, boulder_files]:
         list_.sort(key=lambda x: int(num_re.findall(x)[0]))
 
