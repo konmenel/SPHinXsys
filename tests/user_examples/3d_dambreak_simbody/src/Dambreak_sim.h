@@ -107,7 +107,7 @@ void addCliffContactForSimbody(SimTK::SimbodyMatterSubsystem& matter,
 		const SimTK::ContactCliqueId clique) 
 {
 	Vec3d half_lengths(0.5*(DL - VWx), 0.5 * DW, 0.5 * VWH);
-	int resoluton = 2;
+	int resoluton = 0;
 
 	// Create mesh
 	SimTK::PolygonalMesh brick_mesh;
@@ -123,7 +123,7 @@ void addCliffContactForSimbody(SimTK::SimbodyMatterSubsystem& matter,
 void addBoulderContactForSimbody(SimTK::Body::Rigid& boulder_body)
 {	
 	Vec3d half_lengths(0.5 * BDL, 0.5 * BDW, 0.5 * BDH);
-	int resolution = 2;
+	int resolution = 0;
 
 	// Create mesh
 	SimTK::PolygonalMesh brick_mesh;

@@ -144,7 +144,7 @@ int main()
 	write_water_block_states.writeToFile(0);
 
 	size_t number_of_iterations = system.restart_step_;
-	int screen_output_interval = 100;
+	int screen_output_interval = 1;
 	int restart_output_interval = screen_output_interval * 10;
 	Real End_Time = 1.6;
 	//time step size for output file
