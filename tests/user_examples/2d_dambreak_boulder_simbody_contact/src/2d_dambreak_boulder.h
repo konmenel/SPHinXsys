@@ -138,7 +138,7 @@ void addBoulderContactForSimbody(SimTK::Body::Rigid& boulder_body)
 /**
 * @brief 	Create a water block shape.
 */
-std::vector<Vecd> CreateWaterBlockShape()
+std::vector<Vecd> createWaterBlockShape()
 {
 	//geometry
 	std::vector<Vecd> water_block_shape;
@@ -153,7 +153,7 @@ std::vector<Vecd> CreateWaterBlockShape()
 /** 
 * @brief	Create outer wall shape.
 */
-std::vector<Vecd> CreateOuterWallShape()
+std::vector<Vecd> createOuterWallShape()
 {
 	std::vector<Vecd> outer_wall_shape;
 	outer_wall_shape.push_back(Vecd(-BW, -BW));
@@ -167,7 +167,7 @@ std::vector<Vecd> CreateOuterWallShape()
 /**
 * @brief 	Create inner wall shape.
 */
-std::vector<Vecd> CreateInnerWallShape()
+std::vector<Vecd> createInnerWallShape()
 {
 	std::vector<Vecd> inner_wall_shape;
 	inner_wall_shape.push_back(Vecd(0.0, 0.0));
@@ -180,7 +180,7 @@ std::vector<Vecd> CreateInnerWallShape()
 /**
 * @brief 	Create verical wall shape.
 */
-std::vector<Vecd> CreateVerWallShape()
+std::vector<Vecd> createVerWallShape()
 {
 	std::vector<Vecd> inner_wall_shape;
 	inner_wall_shape.push_back(Vecd(wall_position, 0.0));
@@ -194,7 +194,7 @@ std::vector<Vecd> CreateVerWallShape()
 /**
 * @brief 	Create boulder shape.
 */
-std::vector<Vecd> CreateBoulderShape()
+std::vector<Vecd> createBoulderShape()
 {
 	std::vector<Vecd> boulder;
 	boulder.push_back(Vecd(B_x - BL, B_y));
@@ -205,6 +205,13 @@ std::vector<Vecd> CreateBoulderShape()
 	return boulder;
 }
 
+MultiPolygon createBoulderSimbodyConstrainShape()
+{
+	MultiPolygon multi_polygon;
+	multi_polygon.addAPolygon(createBoulderShape(), ShapeBooleanOps::add);
+	return multi_polygon;
+};
+
 /**
 * @brief 	Fluid body definition.
 */
@@ -214,32 +221,11 @@ public:
 	WaterBlock(SPHSystem& sph_system, string body_name)
 		: FluidBody(sph_system, body_name)
 	{
-		/** Geomtry definition. */
-		std::vector<Vecd> water_block_shape = CreateWaterBlockShape();
-		body_shape_ = new ComplexShape(body_name);
-		body_shape_->addAPolygon(water_block_shape, ShapeBooleanOps::add);
+		MultiPolygon multi_polygon;
+		multi_polygon.addAPolygon(createWaterBlockShape(), ShapeBooleanOps::add);
+		body_shape_.add<MultiPolygonShape>(multi_polygon);
 	}
 };
-
-
-/**
-* @brief 	Case dependent material properties definition.
-*/
-class WaterMaterial : public WeaklyCompressibleFluid
-{
-public:
-	WaterMaterial() : WeaklyCompressibleFluid()
-	{
-		/** Basic material parameters*/
-		rho_0_ = rho0_f;
-		c_0_ = c_f;
-        mu_ = mu_f;
-
-		/** Compute the derived material parameters*/
-		assignDerivedMaterialParameters();
-	}
-};
-
 
 /**
  * @brief 	Wall boundary body definition.
@@ -250,14 +236,11 @@ public:
 	WallBoundary(SPHSystem &sph_system, string body_name)
 		: SolidBody(sph_system, body_name)
 	{
-		/** Geomtry definition. */
-		std::vector<Vecd> outer_shape = CreateOuterWallShape();
-		std::vector<Vecd> inner_shape = CreateInnerWallShape();
-		std::vector<Vecd> verical_wall_shape = CreateVerWallShape();
-		body_shape_ = new ComplexShape(body_name);
-		body_shape_->addAPolygon(outer_shape, ShapeBooleanOps::add);
-		body_shape_->addAPolygon(inner_shape, ShapeBooleanOps::sub);
-		body_shape_->addAPolygon(verical_wall_shape, ShapeBooleanOps::add);
+		MultiPolygon multi_polygon;
+		multi_polygon.addAPolygon(createOuterWallShape(), ShapeBooleanOps::add);
+		multi_polygon.addAPolygon(createInnerWallShape(), ShapeBooleanOps::sub);
+		multi_polygon.addAPolygon(createVerWallShape(), ShapeBooleanOps::add);
+		body_shape_.add<MultiPolygonShape>(multi_polygon);
 	}
 };
 
@@ -271,54 +254,28 @@ public:
 	Boulder(SPHSystem &sph_system, string body_name)
 		: SolidBody(sph_system, body_name)
 	{
-		/** Geomtry definition. */
-		body_shape_ = new ComplexShape(body_name);
-		std::vector<Vecd> boulder_shape = CreateBoulderShape();
-		body_shape_->addAPolygon(boulder_shape, ShapeBooleanOps::add);
+		MultiPolygon multi_polygon;
+		multi_polygon.addAPolygon(createBoulderShape(), ShapeBooleanOps::add);
+		body_shape_.add<MultiPolygonShape>(multi_polygon);
 	}
 };
 
 /**
- * @brief Define boulder material.
- */
-class BoulderMaterial : public LinearElasticSolid
-{
-public:
-	BoulderMaterial() : LinearElasticSolid()
-	{
-		rho_0_ = rho0_s;
-		E_0_ = Youngs_modulus;
-		nu_ = poisson;
-		// eta_0_ = physical_viscosity;
-
-		assignDerivedMaterialParameters();
-	}
-};
-
-/**
-* @brief 	Create fish head for constraint
+* @brief 	Create boulder body for simbody
 */
 class BoulderSystemForSimbody : public SolidBodyPartForSimbody
 {
-	void tagBodyPart() override
+public:
+	BoulderSystemForSimbody(SolidBody &solid_body,
+						 	const std::string &constrained_region_name,
+							Shape& shape)
+		: SolidBodyPartForSimbody(solid_body, constrained_region_name, shape)
 	{
-		BodyPartByParticle::tagBodyPart();
-		body_part_mass_properties_
-			= new SimTK::MassProperties(
+		body_part_mass_properties_ = mass_properties_ptr_keeper_
+			.createPtr<SimTK::MassProperties>(
 				boulder_mass, 
 				SimTK::Vec3(0.0), 
-				SimTK::UnitInertia::brick(BL/2.0, BH/2.0, 0.0)
-				);
-	}
-public:
-	BoulderSystemForSimbody(SolidBody* solid_body,
-		string constrained_region_name, Real solid_body_density)
-		: SolidBodyPartForSimbody(solid_body, constrained_region_name)
-	{
-		body_part_shape_ = new ComplexShape(constrained_region_name);
-		std::vector<Vecd> boulder_shape = CreateBoulderShape();
-		body_part_shape_->addAPolygon(boulder_shape, ShapeBooleanOps::add);
-		/** tag the constrained particle. */
-		tagBodyPart();
+				SimTK::UnitInertia::brick(0.5 * BL, 0.5 * BH, 0.0)
+			);
 	}
 };
