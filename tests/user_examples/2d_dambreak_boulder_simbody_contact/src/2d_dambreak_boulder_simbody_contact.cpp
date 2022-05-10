@@ -7,7 +7,7 @@
 /**
  * @brief The setup of the case
  */
-#include "2d_dambreak_boulder.h"
+#include "2d_dambreak_boulder_sim.h"
 /**
  * @brief 	Main program starts here.
  */
@@ -139,7 +139,7 @@ int main()
 	SimTK::State state = MBsystem.realizeTopology();
 	cout << "SUCCESS!\n";
 	cout << "Selecting time stepping method... ";
-	SimTK::RungeKuttaMersonIntegrator integ(MBsystem);
+	SimTK::SemiExplicitEuler2Integrator integ(MBsystem);
 	// SimTK::CPodesIntegrator integ(MBsystem, SimTK::CPodes::BDF, SimTK::CPodes::Newton);
 	integ.setAccuracy(1e-3);
 	integ.setAllowInterpolation(false);
@@ -182,11 +182,10 @@ int main()
 	int number_of_iterations = 0;
 	int screen_output_interval = 500;
 	Real End_Time = 3.0;					/**< End time. */
-	Real D_Time = End_Time / 1200.0;		/**< Time stamps for output of body states. */
+	Real D_Time = 0.01;						/**< Time stamps for output of body states. */
 	Real Dt = 0.0;							/**< Default advection time step sizes. */
 	Real dt = 0.0; 							/**< Default acoustic time step sizes. */
 	Real total_time = 0.0;
-	Real relax_time = 0.5;
 	/** statistics for computing time. */
 	tick_count t1 = tick_count::now();
 	tick_count::interval_t interval;
@@ -199,6 +198,8 @@ int main()
 			initialize_gravity_to_fluid.parallel_exec();
 			
 			Dt = get_fluid_advection_time_step_size.parallel_exec();
+			Dt = SMIN(Dt, D_Time - integral_time);
+
 			update_density_by_summation.parallel_exec();
 			viscous_acceleration.parallel_exec();
 			/** Viscous force exerting on boulder. */
@@ -208,30 +209,29 @@ int main()
 			/** Dynamics including pressure relaxation. */
 			Real relaxation_time = 0.0;
 			while (relaxation_time < Dt) {
+				dt = get_fluid_time_step_size.parallel_exec();
+				dt = SMIN(dt, Dt - relaxation_time);
+
 				pressure_relaxation.parallel_exec(dt);
 				fluid_pressure_force_on_boulder.parallel_exec(dt);
 				density_relaxation.parallel_exec(dt);
 				/** solid dynamics. */
 				average_velocity_and_acceleration.initialize_displacement_.parallel_exec();
 
-				if (total_time > relax_time)
-				{
-					SimTK::State& state_for_update = integ.updAdvancedState();
-					// Real angle = boulder_body
-					// 				.getBodyRotation(state_for_update)
-					// 				.convertOneAxisRotationToOneAngle(SimTK::ZAxis);
-				
-					SimTK::SpatialVec current_force = force_on_boulder.parallel_exec();
-					force_on_bodies.clearAllBodyForces(state_for_update);
-					force_on_bodies.setOneBodyForce(state_for_update, boulder_body, 
-													current_force);
-					integ.stepBy(dt);
-					constraint_boulder.parallel_exec();
-				}
-				
+				SimTK::State& state_for_update = integ.updAdvancedState();
+				// Real angle = boulder_body
+				// 				.getBodyRotation(state_for_update)
+				// 				.convertOneAxisRotationToOneAngle(SimTK::ZAxis);
+			
+				SimTK::SpatialVec current_force = force_on_boulder.parallel_exec();
+				force_on_bodies.clearAllBodyForces(state_for_update);
+				force_on_bodies.setOneBodyForce(state_for_update, boulder_body, 
+												current_force);
+				integ.stepBy(dt);
+				constraint_boulder.parallel_exec();
+			
 				average_velocity_and_acceleration.update_averages_.parallel_exec(dt);
 
-				dt = get_fluid_time_step_size.parallel_exec();
 				relaxation_time += dt;
 				integral_time += dt;
 				total_time += dt;
@@ -250,11 +250,11 @@ int main()
 			boulder.updateCellLinkedList();
 			water_block_complex.updateConfiguration();
 			boulder_fluid_contact.updateConfiguration();
-			write_total_force_on_boulder.writeToFile(GlobalStaticVariables::physical_time_);
+			write_total_force_on_boulder.writeToFile(number_of_iterations);
 		}
 
 		tick_count t2 = tick_count::now();
-		write_real_body_states.writeToFile(GlobalStaticVariables::physical_time_ / (D_Time * 1e4));
+		write_real_body_states.writeToFile();
 		tick_count t3 = tick_count::now();
 		interval += t3 - t2;
 	}

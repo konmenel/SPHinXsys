@@ -24,9 +24,9 @@ const Real wall_position = 2.0;						/**< Position of the verical wall [m] (x di
 const Real BL = 2.0e-2;								/**< Boulder lenght [m]. */
 const Real BH = 1.5e-2;								/**< Boulder height [m]. */
 const Real B_x = wall_position - 0.1;				/**< Boulder initial position x-axis (right edge) [m]. */
-const Real B_y = 0.0;								/**< Boulder initial position y-axis (bottom edge) [m]. */
-const Real particle_spacing_ref = BH / 6.0; 		/**< Initial reference particle spacing. */
-const Real BW = particle_spacing_ref * 6.0; 		/**< Extending width for BCs. */
+const Real B_y = 0.1;								/**< Boulder initial position y-axis (bottom edge) [m]. */
+const Real particle_spacing_ref = BH / 5.0; 		/**< Initial reference particle spacing. */
+const Real BW = particle_spacing_ref * 4.0; 		/**< Extending width for BCs. */
 
 /** Domain bounds of the system. */
 BoundingBox system_domain_bounds(Vec2d(-BW, -BW), Vec2d(DL + BW, DH + BW));
