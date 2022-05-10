@@ -642,14 +642,14 @@ namespace SPH
 											SimTK::MultibodySystem &MBsystem,
 											SimTK::MobilizedBody &mobod,
 											SimTK::Force::DiscreteForces &force_on_bodies,
-											SimTK::RungeKuttaMersonIntegrator &integ);
+											SimTK::Integrator &integ);
 			virtual ~ConstrainSolidBodyPartBySimBody(){};
 
 		protected:
 			SimTK::MultibodySystem &MBsystem_;
 			SimTK::MobilizedBody &mobod_;
 			SimTK::Force::DiscreteForces &force_on_bodies_;
-			SimTK::RungeKuttaMersonIntegrator &integ_;
+			SimTK::Integrator &integ_;
 			const SimTK::State *simbody_state_;
 			Vec3d initial_mobod_origin_location_;
 
@@ -672,7 +672,7 @@ namespace SPH
 												SimTK::MultibodySystem &MBsystem,
 												SimTK::MobilizedBody &mobod,
 												SimTK::Force::DiscreteForces &force_on_bodies,
-												SimTK::RungeKuttaMersonIntegrator &integ);
+												SimTK::Integrator &integ);
 			virtual ~TotalForceOnSolidBodyPartForSimBody(){};
 
 		protected:
@@ -680,7 +680,7 @@ namespace SPH
 			SimTK::MultibodySystem &MBsystem_;
 			SimTK::MobilizedBody &mobod_;
 			SimTK::Force::DiscreteForces &force_on_bodies_;
-			SimTK::RungeKuttaMersonIntegrator &integ_;
+			SimTK::Integrator &integ_;
 			const SimTK::State *simbody_state_;
 			Vec3d current_mobod_origin_location_;
 

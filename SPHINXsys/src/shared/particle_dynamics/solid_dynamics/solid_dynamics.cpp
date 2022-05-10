@@ -901,7 +901,7 @@ namespace SPH
 											SimTK::MultibodySystem &MBsystem,
 											SimTK::MobilizedBody &mobod,
 											SimTK::Force::DiscreteForces &force_on_bodies,
-											SimTK::RungeKuttaMersonIntegrator &integ)
+											SimTK::Integrator &integ)
 			: ConstrainSolidBodyRegion(solid_body, body_part),
 			  MBsystem_(MBsystem), mobod_(mobod), force_on_bodies_(force_on_bodies), integ_(integ)
 		{
@@ -923,7 +923,7 @@ namespace SPH
 												SimTK::MultibodySystem &MBsystem,
 												SimTK::MobilizedBody &mobod,
 												SimTK::Force::DiscreteForces &force_on_bodies,
-												SimTK::RungeKuttaMersonIntegrator &integ)
+												SimTK::Integrator &integ)
 			: PartDynamicsByParticleReduce<SimTK::SpatialVec, ReduceSum<SimTK::SpatialVec>>(solid_body, body_part),
 			  SolidDataSimple(solid_body),
 			  force_from_fluid_(particles_->force_from_fluid_), contact_force_(particles_->contact_force_),
