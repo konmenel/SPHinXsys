@@ -50,7 +50,7 @@ const Real Youngs_modulus = 73e9;						/**< Young's modulus [Pa]. */
 const Real fK = SimTK::ContactMaterial 							/**< Stiffness Coefficient [Pa] */
 		::calcPlaneStrainStiffness(Youngs_modulus, poisson);
 const Real fDis = 10.0; // to turn off dissipation
-const Real fFac = 0.2; // to turn off friction
+const Real fFac = 0.0;//0.2; // to turn off friction
 const Real fVis = 0.0; //0.02; // to turn off viscous friction
 const SimTK::ContactMaterial contact_material(fK, fDis, fFac, fFac, fVis);
 
@@ -58,7 +58,7 @@ const SimTK::ContactMaterial contact_material(fK, fDis, fFac, fFac, fVis);
 int resolution(30);
 
 void addSimbodyWallContacts(SimTK::SimbodyMatterSubsystem& matter, 
-		const SimTK::ContactCliqueId clique)
+		const SimTK::ContactCliqueId& clique)
 {
 	using SimTK::YAxis;
 	using SimTK::ZAxis;
@@ -107,7 +107,7 @@ void addSimbodyWallContacts(SimTK::SimbodyMatterSubsystem& matter,
 }
 
 void addCliffContactForSimbody(SimTK::SimbodyMatterSubsystem& matter,
-		const SimTK::ContactCliqueId clique) 
+		const SimTK::ContactCliqueId& clique) 
 {
 	Vec3d half_lengths(0.5*(DL - VWx), 0.5 * DW, 0.5 * VWH);
 	int resoluton = 0;

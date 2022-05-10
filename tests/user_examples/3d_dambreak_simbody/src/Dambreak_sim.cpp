@@ -6,6 +6,7 @@
 * ---------------------------------------------------------------------------*/
 #include "Dambreak_sim.h"
 
+// TODO: Too slow, might be simbody contact.
 
 //the main program
 int main()
@@ -103,7 +104,7 @@ int main()
 		boulder_info, SimTK::Transform());
 
 	SimTK::State state = MBsystem.realizeTopology();
-	SimTK::SemiExplicitEuler2Integrator integ(MBsystem);
+	SimTK::RungeKutta2Integrator integ(MBsystem);
 	integ.setAccuracy(1e-3);
 	integ.setAllowInterpolation(false);
 	integ.initialize(state);
@@ -200,15 +201,13 @@ int main()
 			{
 				fcout << std::fixed << std::setprecision(9) << "N=" << number_of_iterations << "	Time = "
 						  << GlobalStaticVariables::physical_time_
-						  << "	dt = " << dt << "\n";
+						  << "	dt = " << dt << endl;
 			}
 			
 			number_of_iterations++;
 
 			water_block.updateCellLinkedList();
 			water_block_complex.updateConfiguration();
-			// fluid_observer_contact.updateConfiguration();
-			// write_recorded_water_pressure.writeToFile(number_of_iterations);
 		}
 
 
