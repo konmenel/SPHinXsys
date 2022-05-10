@@ -13,6 +13,8 @@ int main()
 
 	//build up context -- a SPHSystem
 	SPHSystem system(system_domain_bounds, resolution_ref);
+	ofstream fcout("Run.out");
+
 	/** Set the starting time. */
 	GlobalStaticVariables::physical_time_ = 0.0;
 	/** Tag for computation from restart files. 0: not from restart files. */
@@ -62,7 +64,7 @@ int main()
 	fluid_dynamics::TransportVelocityCorrectionComplex transport_velocity_correction(water_block_complex);
 	/** viscous acceleration and transport velocity correction can be combined because they are independent dynamics. */
 	CombinedInteractionDynamics viscous_acceleration_and_transport_correction(viscous_acceleration, transport_velocity_correction);
-	cout << "Simbody starting..." << endl;
+	fcout << "Simbody starting..." << endl;
 	// ----------------------------------------------------------------------------
 	//Simbody
 	//-----------------------------------------------------------------------------
@@ -118,6 +120,7 @@ int main()
 	BodyStatesRecordingToLegacyVtk write_water_block_states(in_output, system.real_bodies_);
 	/** Output the body states for restart simulation. */
 	RestartIO restart_io(in_output, system.real_bodies_);
+
 	//-------------------------------------------------------------------
 	//from here the time stepping begins
 	//-------------------------------------------------------------------
@@ -156,7 +159,7 @@ int main()
 	tick_count t1 = tick_count::now();
 	tick_count::interval_t interval;
 
-	cout << "Start time stepping..." << endl;
+	fcout << "Start time stepping..." << endl;
 	//computation loop starts
 	while (GlobalStaticVariables::physical_time_ < End_Time)
 	{
@@ -195,7 +198,7 @@ int main()
 
 			if (number_of_iterations % screen_output_interval == 0)
 			{
-				std::cout << std::fixed << std::setprecision(9) << "N=" << number_of_iterations << "	Time = "
+				fcout << std::fixed << std::setprecision(9) << "N=" << number_of_iterations << "	Time = "
 						  << GlobalStaticVariables::physical_time_
 						  << "	dt = " << dt << "\n";
 			}
@@ -218,7 +221,7 @@ int main()
 
 	tick_count::interval_t tt;
 	tt = t4 - t1 - interval;
-	std::cout << "Total wall time for computation: " << tt.seconds() << " seconds." << std::endl;
+	fcout << "Total wall time for computation: " << tt.seconds() << " seconds." << std::endl;
 
 	return 0;
 }

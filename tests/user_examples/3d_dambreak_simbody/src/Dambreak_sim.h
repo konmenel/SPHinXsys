@@ -53,7 +53,6 @@ const Real fDis = 10.0; // to turn off dissipation
 const Real fFac = 0.2; // to turn off friction
 const Real fVis = 0.0; //0.02; // to turn off viscous friction
 const SimTK::ContactMaterial contact_material(fK, fDis, fFac, fFac, fVis);
-const Real surface_thickness = 0.1;
 
 //	resolution which controls the quality of created polygonalmesh
 int resolution(30);
@@ -120,7 +119,7 @@ void addCliffContactForSimbody(SimTK::SimbodyMatterSubsystem& matter,
 
 	// Add Contact surface to body
 	matter.Ground().updBody().addContactSurface(SimTK::Transform(Vec3d(VWx + 0.5*(DL - VWx), 0.5 * DW, 0.5 * VWH)),
-        SimTK::ContactSurface(cliff_geometry, contact_material, 0.01)
+        SimTK::ContactSurface(cliff_geometry, contact_material, resolution_ref)
 				.joinClique(clique));
 }
 
@@ -135,7 +134,7 @@ void addBoulderContactForSimbody(SimTK::Body::Rigid& boulder_body)
 	SimTK::ContactGeometry::TriangleMesh boulder_geo(brick_mesh);
 
 	boulder_body.addContactSurface(SimTK::Transform(),
-        SimTK::ContactSurface(boulder_geo, contact_material, 0.005));
+        SimTK::ContactSurface(boulder_geo, contact_material, resolution_ref));
 }
 
 //	define the fluid body
