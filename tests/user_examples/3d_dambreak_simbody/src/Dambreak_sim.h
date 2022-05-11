@@ -6,7 +6,7 @@
 using namespace SPH;
 
 //for geometry
-const Real resolution_ref = 5.0e-3;	  	//particle spacing
+const Real resolution_ref = 3.75e-3;	  	//particle spacing
 const Real BW = resolution_ref * 4; 	//boundary width
 const Real DL = 4.0;			  		//tank length
 const Real DH = 0.5;				  	//tank height
