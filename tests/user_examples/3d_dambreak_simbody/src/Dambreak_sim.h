@@ -19,7 +19,7 @@ const Real BDH = 1.5e-2;				//boulder height
 const Real BDW = 2.0e-2;				//boulder width
 const Real VWx = 2.0;					//verical wall x position
 const Real VWH = 0.2;					//verical wall height
-const Real BDx = 0.8;				  	//boulder x position
+const Real BDx = 0.08;				  	//boulder x position
 const Real BDy = DW/2.0;				//boulder y position
 const Real BDz = 0.0;				  	//boulder z position
 
