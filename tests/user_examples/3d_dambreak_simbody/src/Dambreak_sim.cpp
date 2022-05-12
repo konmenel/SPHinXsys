@@ -62,9 +62,9 @@ int main()
 	/** Computing viscous acceleration. */
 	fluid_dynamics::ViscousAccelerationWithWall viscous_acceleration(water_block_complex);
 	/** Impose transport velocity. */
-	fluid_dynamics::TransportVelocityCorrectionComplex transport_velocity_correction(water_block_complex);
+	// fluid_dynamics::TransportVelocityCorrectionComplex transport_velocity_correction(water_block_complex);
 	/** viscous acceleration and transport velocity correction can be combined because they are independent dynamics. */
-	CombinedInteractionDynamics viscous_acceleration_and_transport_correction(viscous_acceleration, transport_velocity_correction);
+	// CombinedInteractionDynamics viscous_acceleration_and_transport_correction(viscous_acceleration, transport_velocity_correction);
 	fcout << "Simbody starting..." << endl;
 	// ----------------------------------------------------------------------------
 	//Simbody
@@ -100,11 +100,11 @@ int main()
 	addBoulderContactForSimbody(boulder_info);
 
 	SimTK::MobilizedBody::Free boulder_body(matter.Ground(), 
-		SimTK::Transform(Vec3d(VWx - BDx - BDL*0.5, BDy, BDz + BDH*0.5)),
+		Vec3d(VWx - BDx - 0.5*BDL, BDy, BDz + 0.5*BDH),
 		boulder_info, SimTK::Transform());
 
 	SimTK::State state = MBsystem.realizeTopology();
-	SimTK::RungeKutta2Integrator integ(MBsystem);
+	SimTK::SemiExplicitEuler2Integrator integ(MBsystem);
 	integ.setAccuracy(1e-3);
 	integ.setAllowInterpolation(false);
 	integ.initialize(state);
@@ -149,7 +149,7 @@ int main()
 	write_water_block_states.writeToFile(0);
 
 	size_t number_of_iterations = system.restart_step_;
-	int screen_output_interval = 100;
+	int screen_output_interval = 250;
 	int restart_output_interval = screen_output_interval * 10;
 	Real End_Time = 2.0;
 	//time step size for output file
@@ -169,14 +169,15 @@ int main()
 		while (integration_time < D_Time)
 		{
 
-			//acceleration due to viscous force and gravity
+			// acceleration due to viscous force and gravity
 			initialize_a_fluid_step.parallel_exec();
 			Real Dt = get_fluid_advection_time_step_size.parallel_exec();
 			Dt = SMIN(Dt, D_Time - integration_time);
 			update_density_by_summation.parallel_exec();
-			// viscous_acceleration.parallel_exec();
+			viscous_acceleration.parallel_exec();
 			// transport_velocity_correction.parallel_exec();
-			viscous_acceleration_and_transport_correction.parallel_exec();
+			// viscous_acceleration_and_transport_correction.parallel_exec();
+			// Real Dt = 0.005;
 
 			Real relaxation_time = 0.0;
 			while (relaxation_time < Dt)
@@ -185,6 +186,7 @@ int main()
 				density_relaxation.parallel_exec(dt);
 				dt = get_fluid_time_step_size.parallel_exec();
 				dt = SMIN(dt, Dt - relaxation_time);
+				// dt = 0.001;
 
 				SimTK::State& state_for_update = integ.updAdvancedState();
 				force_on_bodies.clearAllBodyForces(state_for_update);

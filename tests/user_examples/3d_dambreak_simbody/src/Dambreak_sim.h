@@ -21,7 +21,7 @@ const Real VWx = 2.0;					//verical wall x position
 const Real VWH = 0.2;					//verical wall height
 const Real BDx = 0.08;				  	//boulder x position
 const Real BDy = DW/2.0;				//boulder y position
-const Real BDz = 0.0;				  	//boulder z position
+const Real BDz = 0.05;				  	//boulder z position
 
 // x="0.9" y="0.24" z="0"
 // x="0.12" y="0.12" z="0.45" 
@@ -43,19 +43,20 @@ const Real boulder_vol = BDL * BDH * BDW;				/**< Boulder Volume [m^3]. (1.5 x 2
 const Real boulder_mass = rho0_s * boulder_vol;			/**< Boulder Mass [kg]. */
 const Real poisson = 0.3;								/**< Poisson's ratio. */
 const Real Youngs_modulus = 73e9;						/**< Young's modulus [Pa]. */
+const Real surface_thickness = 1.0;
 
 /**
  * @brief Contact properties of the simbody.
  */
 const Real fK = SimTK::ContactMaterial 							/**< Stiffness Coefficient [Pa] */
 		::calcPlaneStrainStiffness(Youngs_modulus, poisson);
-const Real fDis = 10.0; // to turn off dissipation
+const Real fDis = 1.0; // to turn off dissipation
 const Real fFac = 0.0;//0.2; // to turn off friction
 const Real fVis = 0.0; //0.02; // to turn off viscous friction
 const SimTK::ContactMaterial contact_material(fK, fDis, fFac, fFac, fVis);
 
 //	resolution which controls the quality of created polygonalmesh
-int resolution(30);
+int resolution = 20;
 
 void addSimbodyWallContacts(SimTK::SimbodyMatterSubsystem& matter, 
 		const SimTK::ContactCliqueId& clique)
@@ -119,22 +120,23 @@ void addCliffContactForSimbody(SimTK::SimbodyMatterSubsystem& matter,
 
 	// Add Contact surface to body
 	matter.Ground().updBody().addContactSurface(SimTK::Transform(Vec3d(VWx + 0.5*(DL - VWx), 0.5 * DW, 0.5 * VWH)),
-        SimTK::ContactSurface(cliff_geometry, contact_material, resolution_ref)
+        SimTK::ContactSurface(cliff_geometry, contact_material, surface_thickness)
 				.joinClique(clique));
 }
 
 void addBoulderContactForSimbody(SimTK::Body::Rigid& boulder_body)
 {	
 	Vec3d half_lengths(0.5 * BDL, 0.5 * BDW, 0.5 * BDH);
-	int resolution = 0;
+	int resolution = 1;
 
 	// Create mesh
 	SimTK::PolygonalMesh brick_mesh;
 	brick_mesh = SimTK::PolygonalMesh::createBrickMesh(half_lengths, resolution);
 	SimTK::ContactGeometry::TriangleMesh boulder_geo(brick_mesh);
+	// SimTK::ContactGeometry::Brick boulder_geo(half_lengths);
 
 	boulder_body.addContactSurface(SimTK::Transform(),
-        SimTK::ContactSurface(boulder_geo, contact_material, resolution_ref));
+        SimTK::ContactSurface(boulder_geo, contact_material, surface_thickness));
 }
 
 //	define the fluid body
@@ -145,7 +147,7 @@ public:
 		: FluidBody(system, body_name)
 	{
 		Vecd halfsize_water(0.5 * LL, 0.5 * LW, 0.5 * LH);
-		Vecd translation_water = halfsize_water;
+		Vecd translation_water(0.5 * LL, 0.5 * LW, 0.5 * LH);
 
 		body_shape_.add<TriangleMeshShapeBrick>(halfsize_water, resolution, translation_water);
 	}
@@ -169,9 +171,9 @@ public:
 		Vecd translation_vwall(VWx + 0.5*(DL - VWx), 0.5 * DW, 0.5 * VWH);
 		body_shape_.add<TriangleMeshShapeBrick>(halfsize_vwall_outer, resolution, translation_vwall);
 
-		Vecd halfsize_vwall_inner(0.5*(DL - VWx), 0.5*DW + 1.5*BW, 0.5 * VWH);
-		translation_vwall = Vecd(VWx + BW + 0.5*(DL - VWx), 0.5 * DW, -BW + 0.5*VWH);
-		body_shape_.substract<TriangleMeshShapeBrick>(halfsize_vwall_outer, resolution, translation_vwall);
+		Vecd halfsize_vwall_inner(0.5*(DL - VWx), 0.5 * DW + BW, 0.5 * VWH);
+		Vecd translation_vwall_inner(VWx + 0.5*(DL - VWx) + BW, 0.5*DW, 0.5*VWH - BW);
+		body_shape_.substract<TriangleMeshShapeBrick>(halfsize_vwall_inner, resolution, translation_vwall_inner);
 	}
 };
 
@@ -182,7 +184,7 @@ public:
 		: SolidBody(system, body_name)
 	{
 		Vecd halfsize(0.5 * BDL, 0.5 * BDW, 0.5 * BDH);
-		Vecd translation_wall(VWx - BDx + 0.5*BDL, BDy, BDz + 0.5*BDH);
+		Vecd translation_wall(VWx - BDx - 0.5*BDL, BDy, BDz + 0.5*BDH);
 		body_shape_.add<TriangleMeshShapeBrick>(halfsize, resolution, translation_wall);
 	}
 };
