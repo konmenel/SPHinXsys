@@ -6,6 +6,8 @@
 * ---------------------------------------------------------------------------*/
 #include "Dambreak_sim.h"
 
+#define ENABLE_WATER 0
+
 // TODO: Too slow, might be simbody contact.
 
 //the main program
@@ -14,31 +16,38 @@ int main()
 
 	//build up context -- a SPHSystem
 	SPHSystem system(system_domain_bounds, resolution_ref);
-	ofstream fcout("Run.out");
+	LogOutput fcout("Run.out");
 
 	/** Set the starting time. */
 	GlobalStaticVariables::physical_time_ = 0.0;
 	/** Tag for computation from restart files. 0: not from restart files. */
 	system.restart_step_ = 0;
 
+#if ENABLE_WATER
 	//the water block
 	WaterBlock water_block(system, "WaterBody");
 	// create fluid particles
 	FluidParticles fluid_particles(water_block, makeShared<WeaklyCompressibleFluid>(rho0_f, c_f, mu_f));
+#endif //ENABLE_WATER
 
 	//the wall boundary
 	WallBoundary wall_boundary(system, "Wall");
 	//create solid particles
 	SolidParticles wall_particles(wall_boundary);
+	fcout << "Tank created!\n";
 
 	//the wall boundary
+	fcout << "Creating boulder..." << endl;
 	Boulder boulder(system, "Boulder");
 	//create solid particles
 	ElasticSolidParticles boulder_particles(boulder, makeShared<LinearElasticSolid>(rho0_s, poisson, Youngs_modulus));
+	fcout << "Boulder created!\n";
 	
 	/** topology */
 	BodyRelationInner boulder_inner(boulder);
+#if ENABLE_WATER
 	ComplexBodyRelation water_block_complex(water_block, {&wall_boundary, &boulder});
+#endif //ENABLE_WATER
 	
 	solid_dynamics::CorrectConfiguration boulder_corrected_configuration(boulder_inner);
 
@@ -47,6 +56,7 @@ int main()
 	//-------------------------------------------------------------------
 	//-------- common particle dynamics ----------------------------------------
 	Gravity gravity(Vec3d(0.0, 0.0, -gravity_g));
+#if ENABLE_WATER
 	TimeStepInitialization initialize_a_fluid_step(water_block, gravity);
 	//-------- fluid dynamics --------------------------------------------------
 	//evaluation of density by summation approach
@@ -65,6 +75,8 @@ int main()
 	// fluid_dynamics::TransportVelocityCorrectionComplex transport_velocity_correction(water_block_complex);
 	/** viscous acceleration and transport velocity correction can be combined because they are independent dynamics. */
 	// CombinedInteractionDynamics viscous_acceleration_and_transport_correction(viscous_acceleration, transport_velocity_correction);
+#endif //ENABLE_WATER
+
 	fcout << "Simbody starting..." << endl;
 	// ----------------------------------------------------------------------------
 	//Simbody
@@ -151,7 +163,7 @@ int main()
 	size_t number_of_iterations = system.restart_step_;
 	int screen_output_interval = 250;
 	int restart_output_interval = screen_output_interval * 10;
-	Real End_Time = 2.0;
+	Real End_Time = 5.0;
 	//time step size for output file
 	Real D_Time = 0.01;
 	Real dt = 0.001; //default acoustic time step sizes
@@ -169,6 +181,7 @@ int main()
 		while (integration_time < D_Time)
 		{
 
+#if ENABLE_WATER
 			// acceleration due to viscous force and gravity
 			initialize_a_fluid_step.parallel_exec();
 			Real Dt = get_fluid_advection_time_step_size.parallel_exec();
@@ -177,16 +190,21 @@ int main()
 			viscous_acceleration.parallel_exec();
 			// transport_velocity_correction.parallel_exec();
 			// viscous_acceleration_and_transport_correction.parallel_exec();
-			// Real Dt = 0.005;
+#else
+			Real Dt = 0.005;
+#endif // ENABLE_WATER
 
 			Real relaxation_time = 0.0;
 			while (relaxation_time < Dt)
 			{
+#if ENABLE_WATER
 				pressure_relaxation.parallel_exec(dt);
 				density_relaxation.parallel_exec(dt);
 				dt = get_fluid_time_step_size.parallel_exec();
 				dt = SMIN(dt, Dt - relaxation_time);
-				// dt = 0.001;
+#else
+				dt = 0.0002;
+#endif // ENABLE_WATER
 
 				SimTK::State& state_for_update = integ.updAdvancedState();
 				force_on_bodies.clearAllBodyForces(state_for_update);
@@ -208,8 +226,10 @@ int main()
 			
 			number_of_iterations++;
 
+#if ENABLE_WATER
 			water_block.updateCellLinkedList();
 			water_block_complex.updateConfiguration();
+#endif // ENABLE_WATER
 		}
 
 
@@ -223,6 +243,7 @@ int main()
 	tick_count::interval_t tt;
 	tt = t4 - t1 - interval;
 	fcout << "Total wall time for computation: " << tt.seconds() << " seconds." << std::endl;
-
+	fcout.close();
+	
 	return 0;
 }

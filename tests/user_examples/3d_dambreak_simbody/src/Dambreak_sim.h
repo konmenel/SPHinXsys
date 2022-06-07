@@ -20,7 +20,7 @@ const Real BDW = 2.0e-2;				//boulder width
 const Real VWx = 2.0;					//verical wall x position
 const Real VWH = 0.2;					//verical wall height
 const Real BDx = 0.08;				  	//boulder x position
-const Real BDy = DW/2.0;				//boulder y position
+const Real BDy = DW * 0.5;				//boulder y position
 const Real BDz = 0.05;				  	//boulder z position
 
 // x="0.9" y="0.24" z="0"
@@ -50,13 +50,43 @@ const Real surface_thickness = 1.0;
  */
 const Real fK = SimTK::ContactMaterial 							/**< Stiffness Coefficient [Pa] */
 		::calcPlaneStrainStiffness(Youngs_modulus, poisson);
-const Real fDis = 1.0; // to turn off dissipation
-const Real fFac = 0.0;//0.2; // to turn off friction
+const Real fDis = 10.0; // to turn off dissipation
+const Real fFac = 0.3; // to turn off friction
 const Real fVis = 0.0; //0.02; // to turn off viscous friction
 const SimTK::ContactMaterial contact_material(fK, fDis, fFac, fFac, fVis);
 
 //	resolution which controls the quality of created polygonalmesh
-int resolution = 20;
+const int resolution = 10;
+
+static void createBrickMesh(const Vecd hf, SimTK::PolygonalMesh &brick)
+{
+	SimTK::Array_<Vecd> vertices;
+	vertices.push_back(Vecd( hf[0],  hf[1],  hf[2]));
+	vertices.push_back(Vecd( hf[0],  hf[1], -hf[2]));
+	vertices.push_back(Vecd( hf[0], -hf[1],  hf[2]));
+	vertices.push_back(Vecd( hf[0], -hf[1], -hf[2]));
+	vertices.push_back(Vecd(-hf[0],  hf[1],  hf[2]));
+	vertices.push_back(Vecd(-hf[0],  hf[1], -hf[2]));
+	vertices.push_back(Vecd(-hf[0], -hf[1],  hf[2]));
+	vertices.push_back(Vecd(-hf[0], -hf[1], -hf[2]));
+
+	SimTK::Array_<int> facesIndeces = {
+		0,2,3,1,
+		1,5,4,0,
+		0,4,6,2,
+		2,6,7,3,
+		3,7,5,1,
+		4,5,7,6
+	};
+	
+	for (size_t i = 0; i < vertices.size(); ++i) {
+		brick.addVertex(vertices[i]);
+	}
+	for (size_t i = 0; i < facesIndeces.size(); i += 4) {
+		const SimTK::Array_<int> verts(&facesIndeces[i], &facesIndeces[i]+4);
+		brick.addFace(verts);
+	}
+}
 
 void addSimbodyWallContacts(SimTK::SimbodyMatterSubsystem& matter, 
 		const SimTK::ContactCliqueId& clique)
@@ -111,11 +141,12 @@ void addCliffContactForSimbody(SimTK::SimbodyMatterSubsystem& matter,
 		const SimTK::ContactCliqueId& clique) 
 {
 	Vec3d half_lengths(0.5*(DL - VWx), 0.5 * DW, 0.5 * VWH);
-	int resoluton = 0;
+	// int resolution = 0;
 
 	// Create mesh
 	SimTK::PolygonalMesh brick_mesh;
-	brick_mesh = SimTK::PolygonalMesh::createBrickMesh(half_lengths, resoluton);
+	// brick_mesh = SimTK::PolygonalMesh::createBrickMesh(half_lengths, resolution);
+	createBrickMesh(half_lengths, brick_mesh);
 	SimTK::ContactGeometry::TriangleMesh cliff_geometry(brick_mesh);
 
 	// Add Contact surface to body
@@ -127,11 +158,12 @@ void addCliffContactForSimbody(SimTK::SimbodyMatterSubsystem& matter,
 void addBoulderContactForSimbody(SimTK::Body::Rigid& boulder_body)
 {	
 	Vec3d half_lengths(0.5 * BDL, 0.5 * BDW, 0.5 * BDH);
-	int resolution = 1;
+	// int resolution = 1;
 
 	// Create mesh
 	SimTK::PolygonalMesh brick_mesh;
-	brick_mesh = SimTK::PolygonalMesh::createBrickMesh(half_lengths, resolution);
+	// brick_mesh = SimTK::PolygonalMesh::createBrickMesh(half_lengths, resolution);
+	createBrickMesh(half_lengths, brick_mesh);
 	SimTK::ContactGeometry::TriangleMesh boulder_geo(brick_mesh);
 	// SimTK::ContactGeometry::Brick boulder_geo(half_lengths);
 
@@ -160,20 +192,21 @@ public:
 		: SolidBody(system, body_name)
 	{
 		// tank shape
-		Vecd halfsize_outer(0.5 * DL + BW, 0.5 * DW + BW, 0.5 * DH + BW);
-		Vecd translation_wall(0.5 * DL, 0.5 * DW, 0.5 * DH);
-		Vecd halfsize_inner(0.5 * DL, 0.5 * DW, 0.5 * DH);
-		body_shape_.add<TriangleMeshShapeBrick>(halfsize_outer, resolution, translation_wall);
-		body_shape_.substract<TriangleMeshShapeBrick>(halfsize_inner, resolution, translation_wall);
+		Vecd halfsize_outer(0.5*DL + BW, 0.5*DW + BW, 0.5*DH + BW);
+		Vecd translation_outer(0.5*DL, 0.5*DW, 0.5*DH);
+		Vecd halfsize_linner(0.5*VWx, 0.5*DW, 0.5*DH);
+		Vecd translation_linner(0.5*VWx, 0.5*DW, 0.5*DH);
+		Vecd halfsize_rinner(0.5*(DL - VWx), 0.5*DW, 0.5*(DH - VWH));
+		Vecd translation_rinner(VWx + 0.5*(DL - VWx), 0.5*DW, VWH + 0.5*(DH - VWH));
 
-		// vertical wall
-		Vecd halfsize_vwall_outer(0.5*(DL - VWx), 0.5 * DW, 0.5 * VWH);
-		Vecd translation_vwall(VWx + 0.5*(DL - VWx), 0.5 * DW, 0.5 * VWH);
-		body_shape_.add<TriangleMeshShapeBrick>(halfsize_vwall_outer, resolution, translation_vwall);
+		body_shape_.add<TriangleMeshShapeBrick>(halfsize_outer, resolution, translation_outer);
+		body_shape_.substract<TriangleMeshShapeBrick>(halfsize_linner, resolution, translation_linner);
+		body_shape_.substract<TriangleMeshShapeBrick>(translation_rinner, resolution, translation_rinner);
 
-		Vecd halfsize_vwall_inner(0.5*(DL - VWx), 0.5 * DW + BW, 0.5 * VWH);
-		Vecd translation_vwall_inner(VWx + 0.5*(DL - VWx) + BW, 0.5*DW, 0.5*VWH - BW);
-		body_shape_.substract<TriangleMeshShapeBrick>(halfsize_vwall_inner, resolution, translation_vwall_inner);
+		// vertical wall remove inside
+		Vecd halfsize_wall_inner(0.5*(DL - VWx + BW), 0.5*DW + BW, 0.5*(VWH + BW));
+		Vecd translation_wall_inner(VWx + 0.5*(DL - VWx) + BW, 0.5*DW, 0.5*VWH - BW);
+		body_shape_.substract<TriangleMeshShapeBrick>(halfsize_wall_inner, resolution, translation_wall_inner);
 	}
 };
 
@@ -185,7 +218,7 @@ public:
 	{
 		Vecd halfsize(0.5 * BDL, 0.5 * BDW, 0.5 * BDH);
 		Vecd translation_wall(VWx - BDx - 0.5*BDL, BDy, BDz + 0.5*BDH);
-		body_shape_.add<TriangleMeshShapeBrick>(halfsize, resolution, translation_wall);
+		body_shape_.add<TriangleMeshShapeBrick>(halfsize, 0, translation_wall);
 	}
 };
 
@@ -207,4 +240,58 @@ public:
 				SimTK::UnitInertia::brick(0.5 * BDL, 0.5 * BDW, 0.5 * BDH)
 			);
 	}
+};
+
+/**
+ * @brief Class to logs output to a file and stdout at the same time
+ * 
+ */
+class LogOutput
+{
+public:
+	LogOutput(const std::string &file_name)
+	{
+		log_file_.open(file_name);
+		is_opened_ = true;
+	}
+
+	~LogOutput()
+	{
+		if (is_opened_)
+		{
+			log_file_.close();
+		}
+	}
+
+	void close()
+	{
+		if (is_opened_)
+		{
+			log_file_.close();
+			is_opened_ = false;
+		}
+	}
+
+	// Overload the << operator to write to both stdout and log file
+	template<typename T>
+	LogOutput& operator<<(const T& t)
+	{
+		std::cout << t;
+		log_file_ << t;
+
+		return *this;
+	}
+
+	// Overload the << operator to handle std::endl
+	LogOutput& operator<<(std::ostream& (*f)(std::ostream&))
+	{
+		f(std::cout);
+		f(log_file_);
+
+		return *this;
+	}
+	
+private:
+	bool is_opened_;
+	std::ofstream log_file_;
 };
