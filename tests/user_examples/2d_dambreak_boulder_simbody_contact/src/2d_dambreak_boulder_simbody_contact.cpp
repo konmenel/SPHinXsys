@@ -239,7 +239,7 @@ int main()
 			}
 			
 			if (number_of_iterations % screen_output_interval == 0) {
-				cout << fixed << setprecision(9) << "N=" << number_of_iterations 
+				cout << std::fixed << std::setprecision(9) << "N=" << number_of_iterations 
 					 << "	Total Time = " << total_time 
 					 << "	Physical Time = " << GlobalStaticVariables::physical_time_ 
 					 << "	Dt = " << Dt << "	dt = " << dt << "\n";
@@ -262,11 +262,6 @@ int main()
 
 	tick_count::interval_t tt;
 	tt = t4 - t1 - interval;
-
-	cout << fixed << setprecision(9) << "N=" << number_of_iterations 
-					 << "	Total Time = " << total_time 
-					 << "	Physical Time = " << GlobalStaticVariables::physical_time_ 
-					 << "	Dt = " << Dt << "	dt = " << dt << "\n";
 	cout << "Total wall time for computation: " << tt.seconds() << " seconds.\n";
 	
 	return 0;
