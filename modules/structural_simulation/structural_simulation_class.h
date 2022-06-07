@@ -15,7 +15,15 @@
 #include <vector>
 
 using namespace SPH;
-using namespace std;
+// using namespace std;
+
+using std::array;
+using std::pair;
+using std::tuple;
+using std::string;
+using std::vector;
+using std::shared_ptr;
+
 using GravityPair = pair<int, Vec3d>;
 using AccelTuple = tuple<int, BoundingBox, Vec3d>;
 using ForceTuple = tuple<int, BoundingBox, Vec3d, Real>;

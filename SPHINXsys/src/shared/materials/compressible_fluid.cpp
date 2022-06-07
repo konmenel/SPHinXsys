@@ -5,7 +5,7 @@
 
 #include "compressible_fluid.h"
 
-using namespace std;
+// using namespace std;
 
 namespace SPH {
 	//===============================================================//

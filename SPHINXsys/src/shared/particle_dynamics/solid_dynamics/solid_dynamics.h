@@ -35,6 +35,11 @@
 #include "elastic_solid.h"
 #include "base_kernel.h"
 
+using std::array;
+using std::out_of_range;
+using std::runtime_error;
+using std::to_string;
+
 namespace SPH
 {
 	template <int DataTypeIndex, typename VariableType>

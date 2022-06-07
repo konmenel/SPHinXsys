@@ -8,7 +8,7 @@
 #include "complex_solid.h"
 #include "solid_particles.h"
 
-using namespace std;
+// using namespace std;
 
 namespace SPH
 {

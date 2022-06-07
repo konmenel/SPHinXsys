@@ -32,6 +32,8 @@
 #include "xml_engine.h"
 #include "all_physical_dynamics.h"
 
+using std::endl;
+
 namespace SPH
 {
 	/**
