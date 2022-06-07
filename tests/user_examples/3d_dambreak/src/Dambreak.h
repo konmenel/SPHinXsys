@@ -4,6 +4,8 @@
 #include "sphinxsys.h"
 
 using namespace SPH;
+using std::cout;
+using std::endl;
 
 //for geometry
 const Real resolution_ref = 0.0085;	  	//particle spacing

@@ -6,6 +6,8 @@
  * @brief Namespace cite here.
  */
 using namespace SPH;
+using std::cout;
+using std::endl;
 
 
 /**

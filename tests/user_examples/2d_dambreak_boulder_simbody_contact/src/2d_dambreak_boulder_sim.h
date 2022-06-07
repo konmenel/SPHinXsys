@@ -7,6 +7,8 @@
  * @brief Namespace cite here.
  */
 using namespace SPH;
+using std::cout;
+using std::endl;
 
 // TODO: add the vertical wall
 // TODO: add dumping area at the end
