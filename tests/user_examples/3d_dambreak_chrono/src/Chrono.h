@@ -1,19 +1,11 @@
 #include "sphinxsys.h"
 
-#define SMOOTH_CONTACT 0
-
 #include "chrono/physics/ChBody.h"
 #include "chrono/physics/ChBodyEasy.h"
 
-#if SMOOTH_CONTACT
-#include "chrono/physics/ChSystemSMC.h"
-using SystemCh = chrono::ChSystemSMC;
-using SurfMaterialCh = chrono::ChMaterialSurfaceSMC;
-#else
 #include "chrono/physics/ChSystemNSC.h"
 using SystemCh = chrono::ChSystemNSC;
 using SurfMaterialCh = chrono::ChMaterialSurfaceNSC;
-#endif // end if SMOOTH_CONTACT
 
 using namespace SPH;
 
