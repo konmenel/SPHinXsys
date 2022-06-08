@@ -4,7 +4,7 @@
 * This is the one of the basic test cases for efficient and accurate time     *
 * integration scheme investigation 							  				  *
 * ---------------------------------------------------------------------------*/
-#include "Chrono.h"
+#include "Dambreak_ch.h"
 
 #define ENABLE_WATER 1
 
@@ -75,7 +75,8 @@ int main()
 	ch_system.Set_G_acc(ChVector<>(0.0, 0.0, -gravity_g));
 
 	BoulderSystemForChrono boulder_for_chrono(boulder, "Boulder_chrono", boulder.body_shape_);
-	ConstrainSolidBodyPartByChrono box_constain(boulder, boulder_for_chrono, boulder_ch);
+	ConstrainSolidBodyPartByChrono boulder_constain(boulder, boulder_for_chrono, boulder_ch);
+	TotalForceOnSolidBodyPartForChrono force_on_boulder(boulder, boulder_for_chrono, boulder_ch, ch_system);
 
 	fcout << "OK!" << endl;
 
@@ -96,7 +97,7 @@ int main()
 	Real dt = 0.001;
 	Real end_time = 2.0;
 	Real out_time = 0.01;
-	size_t report_steps = 500;
+	size_t report_steps = 200;
 
 	write_body_states.writeToFile(0);
 
@@ -129,9 +130,9 @@ int main()
 				dt = get_fluid_time_step_size.parallel_exec();
 				dt = SMIN(dt, Dt - relaxation_time);
 #endif // ENABLE_WATER
-
+			force_on_boulder.parallel_exec();
 			ch_system.DoStepDynamics(dt);
-			box_constain.parallel_exec();
+			boulder_constain.parallel_exec();
 			
 			integration_time += dt;
 			relaxation_time += dt;
@@ -139,7 +140,7 @@ int main()
 			}
 
 			if (number_of_iterations % report_steps == 0) {
-				fcout << "Step = " << number_of_iterations << "\treal time = " << 
+				fcout << "Step = " << number_of_iterations << "\tReal time = " << 
 				GlobalStaticVariables::physical_time_ << endl;
 			}
 
