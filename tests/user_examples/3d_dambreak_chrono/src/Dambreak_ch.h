@@ -1,9 +1,12 @@
-/**
- * @brief 	SPHinXsys Library.
- */
 #include "sphinxsys.h"
+#include "Chrono.h"
 
 using namespace SPH;
+
+// TODO: Add the rest of the walls to chronos
+// TODO: True to create each wall of the tank seperately
+// TODO: Change tank materials
+// TODO: Tune contact coefficients
 
 //for geometry
 const Real resolution_ref = 3.75e-3;	  	//particle spacing
@@ -23,12 +26,7 @@ const Real BDx = 0.08;				  	//boulder x position
 const Real BDy = DW * 0.5;				//boulder y position
 const Real BDz = 0.05;				  	//boulder z position
 
-// x="0.9" y="0.24" z="0"
-// x="0.12" y="0.12" z="0.45" 
-
-
-/** Domain bounds of the system. */
-BoundingBox system_domain_bounds(Vecd(-BW, -BW, -BW), Vecd(DL + BW, DW + BW, DH + BW));
+const BoundingBox system_domain_bounds(Vecd(-BW, -BW, -BW), Vecd(DL + BW, DW + BW, DH + BW));
 
 // Material properties of the fluid
 const Real rho0_f = 1000.0;
@@ -43,133 +41,114 @@ const Real boulder_vol = BDL * BDH * BDW;				/**< Boulder Volume [m^3]. (1.5 x 2
 const Real boulder_mass = rho0_s * boulder_vol;			/**< Boulder Mass [kg]. */
 const Real poisson = 0.3;								/**< Poisson's ratio. */
 const Real Youngs_modulus = 73e9;						/**< Young's modulus [Pa]. */
-const Real surface_thickness = 1.0;
 
-/**
- * @brief Contact properties of the simbody.
- */
-const Real fK = SimTK::ContactMaterial 							/**< Stiffness Coefficient [Pa] */
-		::calcPlaneStrainStiffness(Youngs_modulus, poisson);
-const Real fDis = 10.0; // to turn off dissipation
-const Real fFac = 0.3; // to turn off friction
-const Real fVis = 0.0; //0.02; // to turn off viscous friction
-const SimTK::ContactMaterial contact_material(fK, fDis, fFac, fFac, fVis);
+const int resolution = 20;
 
-//	resolution which controls the quality of created polygonalmesh
-const int resolution = 10;
+auto collition_model = chrono_types::make_shared<chrono::collision::ChCollisionModelBullet>();
+const float friction_coef = 0.2f;
 
-static void createBrickMesh(const Vecd hf, SimTK::PolygonalMesh &brick)
+std::shared_ptr<ChBody> addBoulderCh(ChSystem &ch_system)
 {
-	SimTK::Array_<Vecd> vertices;
-	vertices.push_back(Vecd( hf[0],  hf[1],  hf[2]));
-	vertices.push_back(Vecd( hf[0],  hf[1], -hf[2]));
-	vertices.push_back(Vecd( hf[0], -hf[1],  hf[2]));
-	vertices.push_back(Vecd( hf[0], -hf[1], -hf[2]));
-	vertices.push_back(Vecd(-hf[0],  hf[1],  hf[2]));
-	vertices.push_back(Vecd(-hf[0],  hf[1], -hf[2]));
-	vertices.push_back(Vecd(-hf[0], -hf[1],  hf[2]));
-	vertices.push_back(Vecd(-hf[0], -hf[1], -hf[2]));
+	auto box_mat = chrono_types::make_shared<SurfMaterialCh>();
+	box_mat->SetFriction(friction_coef);
+#if SMOOTH_CONTACT
+	box_mat->SetYoungModulus(Youngs_modulus);
+	box_mat->SetPoissonRatio(poisson);
+#endif // end if SMOOTH_CONTACT
 
-	SimTK::Array_<int> facesIndeces = {
-		0,2,3,1,
-		1,5,4,0,
-		0,4,6,2,
-		2,6,7,3,
-		3,7,5,1,
-		4,5,7,6
-	};
-	
-	for (size_t i = 0; i < vertices.size(); ++i) {
-		brick.addVertex(vertices[i]);
-	}
-	for (size_t i = 0; i < facesIndeces.size(); i += 4) {
-		const SimTK::Array_<int> verts(&facesIndeces[i], &facesIndeces[i]+4);
-		brick.addFace(verts);
-	}
+	auto box_ch = chrono_types::make_shared<ChBodyEasyBox>(	BDL,
+															BDW,
+															BDH,
+															rho0_s,
+															false,
+															true,
+															box_mat,
+															collition_model);
+	box_ch->SetName("Box");
+	box_ch->SetPos(ChVector<>(BDx, BDy, BDz));
+
+	ch_system.AddBody(box_ch);
+	return box_ch;
 }
 
-void addSimbodyWallContacts(SimTK::SimbodyMatterSubsystem& matter, 
-		const SimTK::ContactCliqueId& clique)
-{
-	using SimTK::YAxis;
-	using SimTK::ZAxis;
-
-	const SimTK::ContactGeometry::HalfSpace half_space;
-
-	// // Left wall
-	// const SimTK::Rotation R_left(Pi, ZAxis);
-	// matter.Ground().updBody().addContactSurface(
-	// 	SimTK::Transform(R_left),
-    //     SimTK::ContactSurface(half_space, contact_material)
-    //                    .joinClique(clique));
-	
-	// Floor
-	const SimTK::Rotation R_floor(Pi * 0.5, YAxis);
-	matter.Ground().updBody().addContactSurface(
-		SimTK::Transform(R_floor),
-        SimTK::ContactSurface(half_space, contact_material)
-                       .joinClique(clique));
-	
-	// // Ceiling
-	// const SimTK::Rotation R_ceiling(Pi * 0.5, YAxis);
-	// matter.Ground().updBody().addContactSurface(
-	// 	SimTK::Transform(R_ceiling, Vec3d(0.0, 0.0, DH)),
-    //     SimTK::ContactSurface(half_space, contact_material)
-    //                    .joinClique(clique));
-	
-	// // Right wall
-	// matter.Ground().updBody().addContactSurface(Vec3d(DL, 0.0, 0.0),
-    //     SimTK::ContactSurface(half_space, contact_material)
-    //                    .joinClique(clique));
-	
-	// // Front wall
-	// const SimTK::Rotation R_front(-Pi * 0.5, ZAxis);
-	// matter.Ground().updBody().addContactSurface(
-	// 	SimTK::Transform(R_front),
-    //     SimTK::ContactSurface(half_space, contact_material)
-    //                    .joinClique(clique));
-	
-	// // Back wall
-	// const SimTK::Rotation R_back(Pi * 0.5, ZAxis);
-	// matter.Ground().updBody().addContactSurface(
-	// 	SimTK::Transform(R_back, Vec3d(0.0, DW, 0.0)),
-	// 	SimTK::ContactSurface(half_space, contact_material)
-	// 				   .joinClique(clique));
-}
-
-void addCliffContactForSimbody(SimTK::SimbodyMatterSubsystem& matter,
-		const SimTK::ContactCliqueId& clique) 
-{
-	Vec3d half_lengths(0.5*(DL - VWx), 0.5 * DW, 0.5 * VWH);
-	// int resolution = 0;
-
-	// Create mesh
-	SimTK::PolygonalMesh brick_mesh;
-	// brick_mesh = SimTK::PolygonalMesh::createBrickMesh(half_lengths, resolution);
-	createBrickMesh(half_lengths, brick_mesh);
-	SimTK::ContactGeometry::TriangleMesh cliff_geometry(brick_mesh);
-
-	// Add Contact surface to body
-	matter.Ground().updBody().addContactSurface(SimTK::Transform(Vec3d(VWx + 0.5*(DL - VWx), 0.5 * DW, 0.5 * VWH)),
-        SimTK::ContactSurface(cliff_geometry, contact_material, surface_thickness)
-				.joinClique(clique));
-}
-
-void addBoulderContactForSimbody(SimTK::Body::Rigid& boulder_body)
+void addWallsCh(ChSystem &ch_system)
 {	
-	Vec3d half_lengths(0.5 * BDL, 0.5 * BDW, 0.5 * BDH);
-	// int resolution = 1;
+	auto tank_mat = chrono_types::make_shared<SurfMaterialCh>();
+	tank_mat->SetFriction(friction_coef);
+#if SMOOTH_CONTACT
+	tank_mat->SetYoungModulus(Youngs_modulus);
+	tank_mat->SetPoissonRatio(poisson);
+#endif // end if SMOOTH_CONTACT
 
-	// Create mesh
-	SimTK::PolygonalMesh brick_mesh;
-	// brick_mesh = SimTK::PolygonalMesh::createBrickMesh(half_lengths, resolution);
-	createBrickMesh(half_lengths, brick_mesh);
-	SimTK::ContactGeometry::TriangleMesh boulder_geo(brick_mesh);
-	// SimTK::ContactGeometry::Brick boulder_geo(half_lengths);
+	auto floor1_ch = chrono_types::make_shared<ChBodyEasyBox>(	VWx,
+																DW,
+																BW,
+																rho0_s,
+																false,
+																true,
+																tank_mat,
+																collition_model);
+	floor1_ch->SetName("Floor1");
+	floor1_ch->SetPos(ChVector<>(VWx * 0.5, DW * 0.5, -BW * 0.5));
+	floor1_ch->SetBodyFixed(true);
+	ch_system.AddBody(floor1_ch);
 
-	boulder_body.addContactSurface(SimTK::Transform(),
-        SimTK::ContactSurface(boulder_geo, contact_material, surface_thickness));
+
+	auto floor2_ch = chrono_types::make_shared<ChBodyEasyBox>(	DL - VWx,
+																DW,
+																BW,
+																rho0_s,
+																false,
+																true,
+																tank_mat,
+																collition_model);
+	floor2_ch->SetName("Floor2");
+	floor2_ch->SetPos(ChVector<>((DL - VWx)*0.5, DW * 0.5, VWH - BW*0.5));
+	floor2_ch->SetBodyFixed(true);
+	ch_system.AddBody(floor2_ch);
+
+	auto verical_wall_ch = chrono_types
+		::make_shared<ChBodyEasyBox>(	BW,
+										DW,
+										VWH,
+										rho0_s,
+										false,
+										true,
+										tank_mat,
+										collition_model);
+	verical_wall_ch->SetName("Cliff");
+	verical_wall_ch->SetPos(ChVector<>(VWx + BW*0.5, DW * 0.5, VWH*0.5 - BW));
+	verical_wall_ch->SetBodyFixed(true);
+	ch_system.AddBody(verical_wall_ch);
+	return;
 }
+
+class WallBoundary : public SolidBody
+{
+public:
+	WallBoundary(SPHSystem &system, const std::string &body_name)
+		: SolidBody(system, body_name)
+	{
+		// tank shape outer shape
+		Vecd halfsize_outer(0.5*DL + BW, 0.5*DW + BW, 0.5*DH + BW);
+		Vecd translation_outer(0.5*DL, 0.5*DW, 0.5*DH);
+		// Remove parts at the right part of the cliff
+		Vecd halfsize_linner(0.5*VWx, 0.5*DW, 0.5*DH);
+		Vecd translation_linner(0.5*VWx, 0.5*DW, 0.5*DH);
+		// Remove parts above cliff
+		Vecd halfsize_rinner(0.5*(DL - VWx), 0.5*DW, 0.5*(DH - VWH));
+		Vecd translation_rinner(VWx + 0.5*(DL - VWx), 0.5*DW, VWH + 0.5*(DH - VWH));
+
+		body_shape_.add<TriangleMeshShapeBrick>(halfsize_outer, resolution, translation_outer);
+		body_shape_.substract<TriangleMeshShapeBrick>(halfsize_linner, resolution, translation_linner);
+		body_shape_.substract<TriangleMeshShapeBrick>(translation_rinner, resolution, translation_rinner);
+
+		// remove inside of cliff
+		Vecd halfsize_wall_inner(0.5*(DL - VWx - BW), 0.5*DW + BW, 0.5*VWH);
+		Vecd translation_wall_inner(0.5*(DL + VWx + BW), 0.5*DW, 0.5*VWH - BW);
+		body_shape_.substract<TriangleMeshShapeBrick>(halfsize_wall_inner, resolution, translation_wall_inner);
+	}
+};
 
 //	define the fluid body
 class WaterBlock : public FluidBody
@@ -184,31 +163,6 @@ public:
 		body_shape_.add<TriangleMeshShapeBrick>(halfsize_water, resolution, translation_water);
 	}
 };
-//	define the static solid wall boundary
-class WallBoundary : public SolidBody
-{
-public:
-	WallBoundary(SPHSystem &system, const std::string &body_name)
-		: SolidBody(system, body_name)
-	{
-		// tank shape
-		Vecd halfsize_outer(0.5*DL + BW, 0.5*DW + BW, 0.5*DH + BW);
-		Vecd translation_outer(0.5*DL, 0.5*DW, 0.5*DH);
-		Vecd halfsize_linner(0.5*VWx, 0.5*DW, 0.5*DH);
-		Vecd translation_linner(0.5*VWx, 0.5*DW, 0.5*DH);
-		Vecd halfsize_rinner(0.5*(DL - VWx), 0.5*DW, 0.5*(DH - VWH));
-		Vecd translation_rinner(VWx + 0.5*(DL - VWx), 0.5*DW, VWH + 0.5*(DH - VWH));
-
-		body_shape_.add<TriangleMeshShapeBrick>(halfsize_outer, resolution, translation_outer);
-		body_shape_.substract<TriangleMeshShapeBrick>(halfsize_linner, resolution, translation_linner);
-		body_shape_.substract<TriangleMeshShapeBrick>(translation_rinner, resolution, translation_rinner);
-
-		// vertical wall remove inside
-		Vecd halfsize_wall_inner(0.5*(DL - VWx + BW), 0.5*DW + BW, 0.5*(VWH + BW));
-		Vecd translation_wall_inner(VWx + 0.5*(DL - VWx) + BW, 0.5*DW, 0.5*VWH - BW);
-		body_shape_.substract<TriangleMeshShapeBrick>(halfsize_wall_inner, resolution, translation_wall_inner);
-	}
-};
 
 class Boulder : public SolidBody
 {
@@ -218,28 +172,24 @@ public:
 	{
 		Vecd halfsize(0.5 * BDL, 0.5 * BDW, 0.5 * BDH);
 		Vecd translation_wall(VWx - BDx - 0.5*BDL, BDy, BDz + 0.5*BDH);
+
 		body_shape_.add<TriangleMeshShapeBrick>(halfsize, 0, translation_wall);
 	}
 };
 
+
 /**
-* @brief 	Create boulder body for simbody
+* @brief 	Create boulder body for Chrono
 */
-class BoulderSystemForSimbody : public SolidBodyPartForSimbody
+class BoulderSystemForChrono : public BodyRegionByParticle
 {
 public:
-	BoulderSystemForSimbody(SolidBody &solid_body,
+	BoulderSystemForChrono(	SolidBody &solid_body,
 						 	const std::string &constrained_region_name,
 							Shape& shape)
-		: SolidBodyPartForSimbody(solid_body, constrained_region_name, shape)
-	{
-		body_part_mass_properties_ = mass_properties_ptr_keeper_
-			.createPtr<SimTK::MassProperties>(
-				boulder_mass, 
-				SimTK::Vec3(0.0), 
-				SimTK::UnitInertia::brick(0.5 * BDL, 0.5 * BDW, 0.5 * BDH)
-			);
-	}
+		: BodyRegionByParticle(solid_body, constrained_region_name, shape) {}
+
+	virtual ~BoulderSystemForChrono() {}
 };
 
 /**
