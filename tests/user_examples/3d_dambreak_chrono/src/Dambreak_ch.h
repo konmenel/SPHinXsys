@@ -43,7 +43,7 @@ const Real boulder_mass = rho0_s * boulder_vol;			/**< Boulder Mass [kg]. */
 const Real poisson = 0.3;								/**< Poisson's ratio. */
 const Real Youngs_modulus = 73e9;						/**< Young's modulus [Pa]. */
 
-const int resolution = 20;
+const int resolution = 40;
 
 auto collition_model = chrono_types::make_shared<chrono::collision::ChCollisionModelBullet>();
 const float friction_coef = 0.2f;
