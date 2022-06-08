@@ -6,6 +6,8 @@
 * ---------------------------------------------------------------------------*/
 #include "test_vtk.h"
 
+using std::cout;
+using std::ios;
 
 //the main program
 int main()
@@ -26,7 +28,7 @@ int main()
 	for (int i = 0; i < 9; i++)
 		position[i] = rand() / (double)RAND_MAX;
 	//create a new VTK file
-	ofstream vtk_file("test_vtk.vtk", ios::binary);
+	std::ofstream vtk_file("test_vtk.vtk", ios::binary);
 	//write the header
 	vtk_file << "# vtk DataFile Version 3.0" << endl;
 	vtk_file << "Test data" << endl;
@@ -63,7 +65,7 @@ int main()
 	vtk_file.close();
 
 	// read the data
-	ifstream vtk_file_read("test_vtk.vtk", ios::binary);
+	std::ifstream vtk_file_read("test_vtk.vtk", ios::binary);
 	// skip 5 lines (the header)
 	string header;
 	for (int i = 0; i < 5; i++) {
@@ -204,7 +206,7 @@ int main()
 
 			if (number_of_iterations % screen_output_interval == 0)
 			{
-				std::cout << std::fixed << std::setprecision(9) << "N=" << number_of_iterations << "	Time = "
+				cout << std::fixed << std::setprecision(9) << "N=" << number_of_iterations << "	Time = "
 						  << GlobalStaticVariables::physical_time_
 						  << "	Dt = " << Dt << "	dt = " << dt << "\n";
 

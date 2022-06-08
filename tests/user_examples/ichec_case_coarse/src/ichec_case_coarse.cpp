@@ -43,7 +43,7 @@ int main()
 	fluid_dynamics::ViscousAccelerationWithWall viscous_acceleration(water_block_complex);
 	
 	/** Output. */
-	ofstream fcout("./stdout.out");
+	std::ofstream fcout("./stdout.out");
 	fcout << "Setting up output...\n";
 
 	/**
@@ -95,7 +95,7 @@ int main()
 
 		if (number_of_iterations % screen_output_interval == 0)
 		{
-			fcout << fixed << setprecision(9) << "N=" << number_of_iterations
+			fcout << std::fixed << std::setprecision(9) << "N=" << number_of_iterations
 					<< "	Total Time = " << total_time
 					<< "	Physical Time = " << GlobalStaticVariables::physical_time_
 					<< "	Dt = " << Dt << "	dt = " << dt << "\n";

@@ -15,11 +15,11 @@ int main(int ac, char *av[])
 	size_t threads;
 	/** Build up context -- a SPHSystem. */
 	if (ac == 1){
-		threads = thread::hardware_concurrency();
+		threads = std::thread::hardware_concurrency();
 	} else if (ac == 2) {
 		threads = boost::lexical_cast<size_t>(av[1]);
 	} else {
-		cout << ac << " arguments provided by 1 was expected." << endl;
+		std::cout << ac << " arguments provided by 1 was expected." << endl;
 		return 1;
 	}
 	
@@ -52,7 +52,7 @@ int main(int ac, char *av[])
 	fluid_dynamics::ViscousAccelerationWithWall viscous_acceleration(water_block_complex);
 	
 	/** Output. */
-	ofstream fcout("./stdout.out");
+	std::ofstream fcout("./stdout.out");
 	fcout << "Setting up output...\n";
 
 	/**
@@ -104,7 +104,7 @@ int main(int ac, char *av[])
 
 		if (number_of_iterations % screen_output_interval == 0)
 		{
-			fcout << fixed << setprecision(9) << "N=" << number_of_iterations
+			fcout << std::fixed << std::setprecision(9) << "N=" << number_of_iterations
 					<< "	Total Time = " << total_time
 					<< "	Physical Time = " << GlobalStaticVariables::physical_time_
 					<< "	Dt = " << Dt << "	dt = " << dt << "\n";
