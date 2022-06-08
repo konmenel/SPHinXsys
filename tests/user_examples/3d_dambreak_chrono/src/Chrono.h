@@ -94,9 +94,9 @@ class TotalForceOnSolidBodyPartForChrono
 {
 public:
 	TotalForceOnSolidBodyPartForChrono(SolidBody &solid_body,
-										BodyRegionByParticle &body_part,
-										ChSystem &ch_system,
-										std::shared_ptr<ChBody> ch_body)
+									   BodyRegionByParticle &body_part,
+									   std::shared_ptr<ChBody> ch_body,
+									   ChSystem &ch_system)
 	: PartSimpleDynamicsByParticle(solid_body, body_part),
 	  solid_dynamics::SolidDataSimple(solid_body),
 	  force_from_fluid_(particles_->force_from_fluid_), contact_force_(particles_->contact_force_),
@@ -125,10 +125,7 @@ protected:
 		Vecd displacement = pos_n_[index_i] - vecToSim(current_mobod_origin_location_);
 		Vecd torque_from_particle = cross(displacement, force_from_particle);
 
-		ch_body_->Accumulate_force(vecToCh(force_from_particle),
-								   ChVector<>(0, 0, 0),
-								   false);
-		ch_body_->Accumulate_torque(vecToCh(torque_from_particle),
-									false);
+		ch_body_->Accumulate_force(vecToCh(force_from_particle), ChVector<>(0), false);
+		ch_body_->Accumulate_torque(vecToCh(torque_from_particle), false);
 	}
 };
