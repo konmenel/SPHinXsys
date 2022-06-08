@@ -100,6 +100,7 @@ int main()
 	size_t report_steps = 200;
 
 	write_body_states.writeToFile(0);
+	return 0;
 
 	//statistics for computing time
 	tick_count t1 = tick_count::now();

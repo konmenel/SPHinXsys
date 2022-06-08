@@ -1,5 +1,6 @@
 #include "sphinxsys.h"
 #include "Chrono.h"
+#include "Log.h"
 
 using namespace SPH;
 
@@ -9,7 +10,7 @@ using namespace SPH;
 // TODO: Tune contact coefficients
 
 //for geometry
-const Real resolution_ref = 3.75e-3;	  	//particle spacing
+const Real resolution_ref = 3.75e-3;	//particle spacing
 const Real BW = resolution_ref * 4; 	//boundary width
 const Real DL = 4.0;			  		//tank length
 const Real DH = 0.5;				  	//tank height
@@ -51,10 +52,6 @@ std::shared_ptr<ChBody> addBoulderCh(ChSystem &ch_system)
 {
 	auto box_mat = chrono_types::make_shared<SurfMaterialCh>();
 	box_mat->SetFriction(friction_coef);
-#if SMOOTH_CONTACT
-	box_mat->SetYoungModulus(Youngs_modulus);
-	box_mat->SetPoissonRatio(poisson);
-#endif // end if SMOOTH_CONTACT
 
 	auto box_ch = chrono_types::make_shared<ChBodyEasyBox>(	BDL,
 															BDW,
@@ -75,10 +72,6 @@ void addWallsCh(ChSystem &ch_system)
 {	
 	auto tank_mat = chrono_types::make_shared<SurfMaterialCh>();
 	tank_mat->SetFriction(friction_coef);
-#if SMOOTH_CONTACT
-	tank_mat->SetYoungModulus(Youngs_modulus);
-	tank_mat->SetPoissonRatio(poisson);
-#endif // end if SMOOTH_CONTACT
 
 	auto floor1_ch = chrono_types::make_shared<ChBodyEasyBox>(	VWx,
 																DW,
@@ -144,9 +137,9 @@ public:
 		body_shape_.substract<TriangleMeshShapeBrick>(translation_rinner, resolution, translation_rinner);
 
 		// remove inside of cliff
-		Vecd halfsize_wall_inner(0.5*(DL - VWx - BW), 0.5*DW + BW, 0.5*VWH);
-		Vecd translation_wall_inner(0.5*(DL + VWx + BW), 0.5*DW, 0.5*VWH - BW);
-		body_shape_.substract<TriangleMeshShapeBrick>(halfsize_wall_inner, resolution, translation_wall_inner);
+		// Vecd halfsize_wall_inner(0.5*(DL - VWx - BW), 0.5*DW + BW, 0.5*VWH);
+		// Vecd translation_wall_inner(0.5*(DL + VWx + BW), 0.5*DW, 0.5*VWH - BW);
+		// body_shape_.substract<TriangleMeshShapeBrick>(halfsize_wall_inner, resolution, translation_wall_inner);
 	}
 };
 
@@ -177,7 +170,6 @@ public:
 	}
 };
 
-
 /**
 * @brief 	Create boulder body for Chrono
 */
@@ -190,58 +182,4 @@ public:
 		: BodyRegionByParticle(solid_body, constrained_region_name, shape) {}
 
 	virtual ~BoulderSystemForChrono() {}
-};
-
-/**
- * @brief Class to logs output to a file and stdout at the same time
- * 
- */
-class LogOutput
-{
-public:
-	LogOutput(const std::string &file_name)
-	{
-		log_file_.open(file_name);
-		is_opened_ = true;
-	}
-
-	~LogOutput()
-	{
-		if (is_opened_)
-		{
-			log_file_.close();
-		}
-	}
-
-	void close()
-	{
-		if (is_opened_)
-		{
-			log_file_.close();
-			is_opened_ = false;
-		}
-	}
-
-	// Overload the << operator to write to both stdout and log file
-	template<typename T>
-	LogOutput& operator<<(const T& t)
-	{
-		std::cout << t;
-		log_file_ << t;
-
-		return *this;
-	}
-
-	// Overload the << operator to handle std::endl
-	LogOutput& operator<<(std::ostream& (*f)(std::ostream&))
-	{
-		f(std::cout);
-		f(log_file_);
-
-		return *this;
-	}
-	
-private:
-	bool is_opened_;
-	std::ofstream log_file_;
 };
