@@ -45,8 +45,8 @@ const Real Youngs_modulus = 73e9;						/**< Young's modulus [Pa]. */
 
 const int resolution = 0;
 
-auto collition_model = chrono_types::make_shared<chrono::collision::ChCollisionModelBullet>();
 const float friction_coef = 0.2f;
+auto collition_model = chrono_types::make_shared<chrono::collision::ChCollisionModelBullet>();
 
 std::shared_ptr<ChBody> addBoulderCh(ChSystem &ch_system)
 {
@@ -61,8 +61,8 @@ std::shared_ptr<ChBody> addBoulderCh(ChSystem &ch_system)
 															true,
 															box_mat,
 															collition_model);
-	box_ch->SetName("Box");
-	box_ch->SetPos(ChVector<>(BDx, BDy, BDz));
+	box_ch->SetName("Boulder");
+	box_ch->SetPos(ChVector<>(VWx - BDx - 0.5*BDL, BDy, BDz + 0.5*BDH));
 
 	ch_system.AddBody(box_ch);
 	return box_ch;
@@ -82,7 +82,7 @@ void addWallsCh(ChSystem &ch_system)
 																tank_mat,
 																collition_model);
 	floor1_ch->SetName("Floor1");
-	floor1_ch->SetPos(ChVector<>(VWx * 0.5, DW * 0.5, -BW * 0.5));
+	floor1_ch->SetPos(ChVector<>(0.5 * VWx, 0.5 * DW, -0.5 * BW));
 	floor1_ch->SetBodyFixed(true);
 	ch_system.AddBody(floor1_ch);
 
@@ -96,7 +96,7 @@ void addWallsCh(ChSystem &ch_system)
 																tank_mat,
 																collition_model);
 	floor2_ch->SetName("Floor2");
-	floor2_ch->SetPos(ChVector<>((DL - VWx)*0.5, DW * 0.5, VWH - BW*0.5));
+	floor2_ch->SetPos(ChVector<>(0.5*(DL + VWx), 0.5 * DW, VWH - 0.5*BW));
 	floor2_ch->SetBodyFixed(true);
 	ch_system.AddBody(floor2_ch);
 
@@ -135,14 +135,14 @@ public:
 		Vec3d wallinner_dims(DL - VWx, DW + 2.0*BW, VWH);
 		Vec3d wallinner_pos(0.5*(DL + VWx) + BW , 0.5 * DW, 0.5*VWH - BW);
 
-		body_shape_.add<TriangleMeshShapeBrick>(outer_dims * 0.5, resolution, outer_pos);
-		body_shape_.substract<TriangleMeshShapeBrick>(linner_dims * 0.5, resolution, linner_pos);
-		body_shape_.substract<TriangleMeshShapeBrick>(rinner_dims * 0.5, resolution, rinner_pos);
-		body_shape_.substract<TriangleMeshShapeBrick>(wallinner_dims * 0.5, resolution, wallinner_pos);
+		body_shape_.add<TriangleMeshShapeBrick>(0.5 * outer_dims, resolution, outer_pos);
+		body_shape_.substract<TriangleMeshShapeBrick>(0.5 * linner_dims, resolution, linner_pos);
+		body_shape_.substract<TriangleMeshShapeBrick>(0.5 * rinner_dims, resolution, rinner_pos);
+		body_shape_.substract<TriangleMeshShapeBrick>(0.5 * wallinner_dims, resolution, wallinner_pos);
 	}
 };
 
-//	define the fluid body
+// Define the fluid body
 class WaterBlock : public FluidBody
 {
 public:
