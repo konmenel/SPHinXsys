@@ -18,32 +18,20 @@ int main()
 
 #if ENABLE_WATER
 	//the water block
-	fcout << "Creating water block shape..." << flush;
 	WaterBlock water_block(system, "WaterBody");
-	fcout << "OK" << endl;
 	// create fluid particles
-	fcout << "Creating fluid particles...";
 	FluidParticles fluid_particles(water_block, makeShared<WeaklyCompressibleFluid>(rho0_f, c_f, mu_f));
-	fcout << "OK" << endl;
 #endif //ENABLE_WATER
 
 	//the walls
-	fcout << "Creating wall shape..." << flush;
 	WallBoundary wall_boundary(system, "Wall");
-	fcout << "OK" << endl;
 	// create solid particles
-	fcout << "Creating wall particles..." << flush;
 	SolidParticles wall_particles(wall_boundary);
-	fcout << "OK" << endl;
 
 	//the boulder
-	fcout << "Creating boulder shape..." << flush;
 	Boulder boulder(system, "Boulder");
-	fcout << "OK" << endl;
 	// create solid particles
-	fcout << "Creating boulder particles..." << flush;
 	ElasticSolidParticles boulder_particles(boulder, makeShared<LinearElasticSolid>(rho0_s, poisson, Youngs_modulus));
-	fcout << "OK" << endl;
 
 	/** topology */
 	BodyRelationInner boulder_inner(boulder);
@@ -147,7 +135,9 @@ int main()
 				dt = get_fluid_time_step_size.parallel_exec();
 				dt = SMIN(dt, Dt - relaxation_time);
 #endif // ENABLE_WATER
-			force_on_boulder.parallel_exec();
+			SimTK::SpatialVec torque_force = force_on_boulder.parallel_exec();
+			boulder_ch->Accumulate_torque(vecToCh(torque_force[0]), false);
+			boulder_ch->Accumulate_force(vecToCh(torque_force[1]), ChVector<>(0.0, 0.0, 0.0), false);
 			ch_system.DoStepDynamics(dt);
 			boulder_constain.parallel_exec();
 			
