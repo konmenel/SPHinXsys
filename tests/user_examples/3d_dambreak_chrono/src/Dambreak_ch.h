@@ -47,7 +47,6 @@ const int resolution = 0;
 
 const float friction_coef = 0.2f;
 const auto collision_type = chrono::collision::ChCollisionSystemType::BULLET;
-auto collition_model = chrono_types::make_shared<chrono::collision::ChCollisionModelBullet>();
 
 std::shared_ptr<ChBody> addBoulderCh(ChSystem &ch_system)
 {
@@ -60,8 +59,7 @@ std::shared_ptr<ChBody> addBoulderCh(ChSystem &ch_system)
 															rho0_s,
 															false,
 															true,
-															boulder_mat,
-															collition_model);
+															boulder_mat);
 	boulder_ch->SetPos(ChVector<>(VWx - BDx - 0.5*BDL, BDy, BDz + 0.5*BDH));
 
 	ch_system.AddBody(boulder_ch);
@@ -79,8 +77,7 @@ void addWallsCh(ChSystem &ch_system)
 																rho0_s,
 																false,
 																true,
-																tank_mat,
-																collition_model);
+																tank_mat);
 	floor1_ch->SetPos(ChVector<>(0.5 * VWx, 0.5 * DW, -(0.5 * BW)));
 	floor1_ch->SetBodyFixed(true);
 	ch_system.AddBody(floor1_ch);
@@ -92,8 +89,7 @@ void addWallsCh(ChSystem &ch_system)
 																rho0_s,
 																false,
 																true,
-																tank_mat,
-																collition_model);
+																tank_mat);
 	floor2_ch->SetPos(ChVector<>(0.5*(DL + VWx), 0.5 * DW, VWH - 0.5*BW));
 	floor2_ch->SetBodyFixed(true);
 	ch_system.AddBody(floor2_ch);
@@ -105,8 +101,7 @@ void addWallsCh(ChSystem &ch_system)
 										rho0_s,
 										false,
 										true,
-										tank_mat,
-										collition_model);
+										tank_mat);
 	verical_wall_ch->SetPos(ChVector<>(VWx + 0.5*BW, 0.5 * DW, 0.5*(VWH - BW)));
 	verical_wall_ch->SetBodyFixed(true);
 	ch_system.AddBody(verical_wall_ch);
