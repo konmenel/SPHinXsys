@@ -43,7 +43,7 @@ const Real boulder_mass = rho0_s * boulder_vol;			/**< Boulder Mass [kg]. */
 const Real poisson = 0.3;								/**< Poisson's ratio. */
 const Real Youngs_modulus = 73e9;						/**< Young's modulus [Pa]. */
 
-const int resolution = 40;
+const int resolution = 0;
 
 auto collition_model = chrono_types::make_shared<chrono::collision::ChCollisionModelBullet>();
 const float friction_coef = 0.2f;
@@ -122,24 +122,23 @@ public:
 	WallBoundary(SPHSystem &system, const std::string &body_name)
 		: SolidBody(system, body_name)
 	{
-		// tank shape outer shape
-		Vecd halfsize_outer(0.5*DL + BW, 0.5*DW + BW, 0.5*DH + BW);
-		Vecd translation_outer(0.5*DL, 0.5*DW, 0.5*DH);
-		// Remove parts at the right part of the cliff
-		Vecd halfsize_linner(0.5*VWx, 0.5*DW, 0.5*DH);
-		Vecd translation_linner(0.5*VWx, 0.5*DW, 0.5*DH);
-		// Remove parts above cliff
-		Vecd halfsize_rinner(0.5*(DL - VWx), 0.5*DW, 0.5*(DH - VWH));
-		Vecd translation_rinner(VWx + 0.5*(DL - VWx), 0.5*DW, VWH + 0.5*(DH - VWH));
-
-		body_shape_.add<TriangleMeshShapeBrick>(halfsize_outer, resolution, translation_outer);
-		body_shape_.substract<TriangleMeshShapeBrick>(halfsize_linner, resolution, translation_linner);
-		body_shape_.substract<TriangleMeshShapeBrick>(translation_rinner, resolution, translation_rinner);
-
+		// // tank shape outer shape
+		Vec3d outer_dims(DL + 2.0*BW, DW + 2.0*BW, DH + 2.0*BW);
+		Vec3d outer_pos(0.5*DL, 0.5*DW, 0.5*DH);
+		// // Remove parts at the right part of the cliff
+		Vec3d linner_dims(VWx, DW, DH);
+		Vec3d linner_pos(0.5*VWx, 0.5*DW, 0.5*DH);
+		// // Remove parts above cliff
+		Vec3d rinner_dims(DL - VWx, DW, DH - VWH);
+		Vec3d rinner_pos(0.5*(DL + VWx), 0.5*DW, VWH + 0.5*(DH - VWH));
 		// remove inside of cliff
-		// Vecd halfsize_wall_inner(0.5*(DL - VWx - BW), 0.5*DW + BW, 0.5*VWH);
-		// Vecd translation_wall_inner(0.5*(DL + VWx + BW), 0.5*DW, 0.5*VWH - BW);
-		// body_shape_.substract<TriangleMeshShapeBrick>(halfsize_wall_inner, resolution, translation_wall_inner);
+		Vec3d wallinner_dims(DL - VWx, DW + 2.0*BW, VWH);
+		Vec3d wallinner_pos(0.5*(DL + VWx) + BW , 0.5 * DW, 0.5*VWH - BW);
+
+		body_shape_.add<TriangleMeshShapeBrick>(outer_dims * 0.5, resolution, outer_pos);
+		body_shape_.substract<TriangleMeshShapeBrick>(linner_dims * 0.5, resolution, linner_pos);
+		body_shape_.substract<TriangleMeshShapeBrick>(rinner_dims * 0.5, resolution, rinner_pos);
+		body_shape_.substract<TriangleMeshShapeBrick>(wallinner_dims * 0.5, resolution, wallinner_pos);
 	}
 };
 
@@ -150,10 +149,10 @@ public:
 	WaterBlock(SPHSystem &system, const std::string &body_name)
 		: FluidBody(system, body_name)
 	{
-		Vecd halfsize_water(0.5 * LL, 0.5 * LW, 0.5 * LH);
-		Vecd translation_water(0.5 * LL, 0.5 * LW, 0.5 * LH);
+		Vecd wblock_dims(LL, LW, LH);
+		Vecd wblock_pos(0.5 * LL, 0.5 * LW, 0.5 * LH);
 
-		body_shape_.add<TriangleMeshShapeBrick>(halfsize_water, resolution, translation_water);
+		body_shape_.add<TriangleMeshShapeBrick>(wblock_dims * 0.5, resolution, wblock_pos);
 	}
 };
 
@@ -163,10 +162,10 @@ public:
 	Boulder(SPHSystem &system, const std::string &body_name)
 		: SolidBody(system, body_name)
 	{
-		Vecd halfsize(0.5 * BDL, 0.5 * BDW, 0.5 * BDH);
-		Vecd translation_wall(VWx - BDx - 0.5*BDL, BDy, BDz + 0.5*BDH);
+		Vecd boulder_dims(BDL, BDW, BDH);
+		Vecd boulder_pos(VWx - BDx - 0.5*BDL, BDy, BDz + 0.5*BDH);
 
-		body_shape_.add<TriangleMeshShapeBrick>(halfsize, 0, translation_wall);
+		body_shape_.add<TriangleMeshShapeBrick>(boulder_dims * 0.5, resolution, boulder_pos);
 	}
 };
 

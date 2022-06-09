@@ -1,3 +1,4 @@
+#pragma once
 #include "sphinxsys.h"
 
 #include "chrono/physics/ChBody.h"

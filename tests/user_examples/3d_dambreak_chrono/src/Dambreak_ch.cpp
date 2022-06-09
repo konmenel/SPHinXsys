@@ -8,6 +8,7 @@
 
 #define ENABLE_WATER 1
 
+using std::flush;
 
 int main()
 {
@@ -17,16 +18,32 @@ int main()
 
 #if ENABLE_WATER
 	//the water block
+	fcout << "Creating water block shape..." << flush;
 	WaterBlock water_block(system, "WaterBody");
+	fcout << "OK" << endl;
 	// create fluid particles
+	fcout << "Creating fluid particles...";
 	FluidParticles fluid_particles(water_block, makeShared<WeaklyCompressibleFluid>(rho0_f, c_f, mu_f));
+	fcout << "OK" << endl;
 #endif //ENABLE_WATER
 
+	//the walls
+	fcout << "Creating wall shape..." << flush;
 	WallBoundary wall_boundary(system, "Wall");
+	fcout << "OK" << endl;
+	// create solid particles
+	fcout << "Creating wall particles..." << flush;
 	SolidParticles wall_particles(wall_boundary);
+	fcout << "OK" << endl;
 
+	//the boulder
+	fcout << "Creating boulder shape..." << flush;
 	Boulder boulder(system, "Boulder");
+	fcout << "OK" << endl;
+	// create solid particles
+	fcout << "Creating boulder particles..." << flush;
 	ElasticSolidParticles boulder_particles(boulder, makeShared<LinearElasticSolid>(rho0_s, poisson, Youngs_modulus));
+	fcout << "OK" << endl;
 
 	/** topology */
 	BodyRelationInner boulder_inner(boulder);
@@ -83,6 +100,7 @@ int main()
 	// Output system
 	In_Output in_output(system);
 	BodyStatesRecordingToLegacyVtk write_body_states(in_output, system.real_bodies_);
+	write_body_states.writeToFile(0);
 
 	/**
 	 * @brief Setup geometrics and initial conditions
@@ -99,8 +117,6 @@ int main()
 	Real out_time = 0.01;
 	size_t report_steps = 200;
 
-	write_body_states.writeToFile(0);
-	return 0;
 
 	//statistics for computing time
 	tick_count t1 = tick_count::now();
