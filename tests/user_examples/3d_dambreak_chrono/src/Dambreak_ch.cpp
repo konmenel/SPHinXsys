@@ -86,6 +86,7 @@ int main()
 
 	// Output system
 	In_Output in_output(system);
+	RestartIO restart_io(in_output, system.real_bodies_);
 	BodyStatesRecordingToLegacyVtk write_body_states(in_output, system.real_bodies_);
 	write_body_states.writeToFile(0);
 
@@ -99,11 +100,20 @@ int main()
 	boulder_corrected_configuration.parallel_exec();
 
 	GlobalStaticVariables::physical_time_ = 0.0;
-	size_t number_of_iterations = 0;
+	size_t number_of_iterations = system.restart_step_;
 	Real dt = 0.001;
-	Real end_time = 2.0;
-	Real out_time = 0.01;
-	size_t report_steps = 200;
+	const Real end_time = 2.0;
+	const Real out_dt = 0.01;
+	const size_t report_steps = 200;
+	const size_t restart_write_steps = 500;
+
+	/** If the starting time is not zero, please setup the restart time step or read in restart states. */
+	if (system.restart_step_ != 0)
+	{
+		GlobalStaticVariables::physical_time_ = restart_io.readRestartFiles(system.restart_step_);
+		water_block.updateCellLinkedList();
+		water_block_complex.updateConfiguration();
+	}
 
 
 	//statistics for computing time
@@ -113,12 +123,12 @@ int main()
 	fcout << "Main loop started..." << endl;
 	while (GlobalStaticVariables::physical_time_ < end_time) {
 		Real integration_time = 0.0;
-		while (integration_time < out_time) {
+		while (integration_time < out_dt) {
 #if ENABLE_WATER
 			// acceleration due to viscous force and gravity
 			initialize_a_fluid_step.parallel_exec();
 			Real Dt = get_fluid_advection_time_step_size.parallel_exec();
-			Dt = SMIN(Dt, out_time - integration_time);
+			Dt = SMIN(Dt, out_dt - integration_time);
 			update_density_by_summation.parallel_exec();
 			viscous_acceleration.parallel_exec();
 			// transport_velocity_correction.parallel_exec();
@@ -138,6 +148,7 @@ int main()
 			SimTK::SpatialVec torque_force = force_on_boulder.parallel_exec();
 			boulder_ch->Accumulate_torque(vecToCh(torque_force[0]), false);
 			boulder_ch->Accumulate_force(vecToCh(torque_force[1]), ChVector<>(0.0, 0.0, 0.0), false);
+			boulder_constain.resetInitialBodyOrigin();
 			ch_system.DoStepDynamics(dt);
 			boulder_constain.parallel_exec();
 			
@@ -149,6 +160,10 @@ int main()
 			if (number_of_iterations % report_steps == 0) {
 				fcout << "Step = " << number_of_iterations << "\tReal time = " << 
 				GlobalStaticVariables::physical_time_ << endl;
+			}
+
+			if (number_of_iterations % restart_write_steps == 0) {
+				restart_io.writeToFile(number_of_iterations);
 			}
 
 			number_of_iterations++;

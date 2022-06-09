@@ -46,6 +46,11 @@ public:
 		
 	virtual ~ConstrainSolidBodyPartByChrono(){};
 
+	virtual void resetInitialBodyOrigin()
+	{
+		initial_body_origin_location_ = vecToSim(ch_body_->GetPos());
+	}
+
 protected:
 	std::shared_ptr<ChBody> ch_body_;
 	Vec3d initial_body_origin_location_;
@@ -55,16 +60,16 @@ protected:
 		body_->setNewlyUpdated();
 	}
 
-	void virtual Update(size_t index_i, Real dt = 0.0) override 
+	virtual void Update(size_t index_i, Real dt = 0.0) override 
 	{
 		Vec3d rr;
 		ChVector<> pos, vel, acc;
 		Quaternion rot;
-		rr = pos_0_[index_i] - initial_body_origin_location_;
+		rr = pos_0_[index_i] - initial_body_origin_location_; 	// relative position
 
 		ChVector<> rr_ch = vecToCh(rr);
 		
-		pos = ch_body_->GetPos(); 							// Translation of origin
+		pos = ch_body_->GetPos(); 								// Translation of origin
 		vel = ch_body_->PointSpeedLocalToParent(rr_ch); 		// Velocity of origin
 		acc = ch_body_->PointAccelerationLocalToParent(rr_ch); 	// Velocity of point
 		rot = ch_body_->GetRot();								// Rotation of local frame
