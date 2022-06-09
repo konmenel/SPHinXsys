@@ -14,7 +14,7 @@ namespace SPH
 			std::cout << __FILE__ << ':' << __LINE__ << std::endl;
 			throw;
 		}
-		std::cout << "num of faces:" << triangle_mesh->getNumFaces() << std::endl;
+		// std::cout << "num of faces:" << triangle_mesh->getNumFaces() << std::endl;
 
 		return triangle_mesh;
 	}
