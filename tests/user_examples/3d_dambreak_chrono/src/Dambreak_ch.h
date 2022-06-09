@@ -50,7 +50,7 @@ const auto collision_type = chrono::collision::ChCollisionSystemType::BULLET;
 
 std::shared_ptr<ChBody> addBoulderCh(ChSystem &ch_system)
 {
-	auto boulder_mat = chrono_types::make_shared<SurfMaterialCh>();
+	auto boulder_mat = chrono_types::make_shared<ChMaterialSurfaceNSC>();
 	boulder_mat->SetFriction(friction_coef);
 
 	auto boulder_ch = chrono_types::make_shared<ChBodyEasyBox>(	BDL,
@@ -68,7 +68,7 @@ std::shared_ptr<ChBody> addBoulderCh(ChSystem &ch_system)
 
 void addWallsCh(ChSystem &ch_system)
 {	
-	auto tank_mat = chrono_types::make_shared<SurfMaterialCh>();
+	auto tank_mat = chrono_types::make_shared<ChMaterialSurfaceNSC>();
 	tank_mat->SetFriction(friction_coef);
 
 	auto floor1_ch = chrono_types::make_shared<ChBodyEasyBox>(	VWx,

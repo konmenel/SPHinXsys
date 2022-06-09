@@ -1,9 +1,3 @@
-/* ---------------------------------------------------------------------------*
-*                       SPHinXsys: 3D dambreak example                        *
-* ----------------------------------------------------------------------------*
-* This is the one of the basic test cases for efficient and accurate time     *
-* integration scheme investigation 							  				  *
-* ---------------------------------------------------------------------------*/
 #include "Dambreak_ch.h"
 
 #define ENABLE_WATER 1
@@ -68,10 +62,20 @@ int main()
 #endif //ENABLE_WATER
 
 	fcout << "Setting up Chrono..." << std::flush;
-	SystemCh ch_system;
+	ChSystemNSC ch_system;
 	ch_system.SetCollisionSystemType(collision_type);
 	auto boulder_ch = addBoulderCh(ch_system);
 	addWallsCh(ch_system);
+
+	// Set up the force and torque objects
+	auto force_ch = chrono_types::make_shared<ChForce>();
+	auto torque_ch = chrono_types::make_shared<ChForce>();
+	force_ch->SetMode(ChForce::ForceType::FORCE);
+	torque_ch->SetMode(ChForce::ForceType::TORQUE);
+	force_ch->SetVrelpoint(ChVector<>(.0, .0, .0));
+	torque_ch->SetVrelpoint(ChVector<>(.0, .0, .0));
+	boulder_ch->AddForce(force_ch);
+	boulder_ch->AddForce(torque_ch);
 
 	ch_system.SetTimestepperType(ChTimestepper::Type::EULER_IMPLICIT_LINEARIZED);
 	ch_system.SetSolverType(ChSolver::Type::PSOR);
@@ -100,11 +104,12 @@ int main()
 	boulder_corrected_configuration.parallel_exec();
 
 	GlobalStaticVariables::physical_time_ = 0.0;
+	system.restart_step_ = 0;
 	size_t number_of_iterations = system.restart_step_;
 	Real dt = 0.001;
 	const Real end_time = 2.0;
 	const Real out_dt = 0.01;
-	const size_t report_steps = 200;
+	const size_t report_steps = 100;
 	const size_t restart_write_steps = 500;
 
 	/** If the starting time is not zero, please setup the restart time step or read in restart states. */
@@ -145,21 +150,26 @@ int main()
 				dt = get_fluid_time_step_size.parallel_exec();
 				dt = SMIN(dt, Dt - relaxation_time);
 #endif // ENABLE_WATER
-			SimTK::SpatialVec torque_force = force_on_boulder.parallel_exec();
-			boulder_ch->Accumulate_torque(vecToCh(torque_force[0]), false);
-			boulder_ch->Accumulate_force(vecToCh(torque_force[1]), ChVector<>(0.0, 0.0, 0.0), false);
-			boulder_constain.resetInitialBodyOrigin();
-			ch_system.DoStepDynamics(dt);
-			boulder_constain.parallel_exec();
-			
-			integration_time += dt;
-			relaxation_time += dt;
-			GlobalStaticVariables::physical_time_ += dt;
+				SimTK::SpatialVec torque_force = force_on_boulder.parallel_exec();
+				torque_ch->SetDir(vecToCh(torque_force[0]));
+				force_ch->SetDir(vecToCh(torque_force[1]));
+				torque_ch->SetMforce(torque_force[0].norm());
+				force_ch->SetMforce(torque_force[1].norm());
+				// boulder_ch->Accumulate_torque(vecToCh(torque_force[0]), false);
+				// boulder_ch->Accumulate_force(vecToCh(torque_force[1]), ChVector<>(0.0, 0.0, 0.0), false);
+				ch_system.DoStepDynamics(dt);
+				boulder_constain.parallel_exec();
+				
+				integration_time += dt;
+				relaxation_time += dt;
+				GlobalStaticVariables::physical_time_ += dt;
 			}
 
 			if (number_of_iterations % report_steps == 0) {
 				fcout << "Step = " << number_of_iterations << "\tReal time = " << 
 				GlobalStaticVariables::physical_time_ << endl;
+				fcout << "force vec = " << force_ch->GetForce() <<
+						"\tforce modulus = " << force_ch->GetForceMod() << endl;
 			}
 
 			if (number_of_iterations % restart_write_steps == 0) {
