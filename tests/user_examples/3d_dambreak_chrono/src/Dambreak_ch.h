@@ -46,26 +46,26 @@ const Real Youngs_modulus = 73e9;						/**< Young's modulus [Pa]. */
 const int resolution = 0;
 
 const float friction_coef = 0.2f;
+const auto collision_type = chrono::collision::ChCollisionSystemType::BULLET;
 auto collition_model = chrono_types::make_shared<chrono::collision::ChCollisionModelBullet>();
 
 std::shared_ptr<ChBody> addBoulderCh(ChSystem &ch_system)
 {
-	auto box_mat = chrono_types::make_shared<SurfMaterialCh>();
-	box_mat->SetFriction(friction_coef);
+	auto boulder_mat = chrono_types::make_shared<SurfMaterialCh>();
+	boulder_mat->SetFriction(friction_coef);
 
-	auto box_ch = chrono_types::make_shared<ChBodyEasyBox>(	BDL,
+	auto boulder_ch = chrono_types::make_shared<ChBodyEasyBox>(	BDL,
 															BDW,
 															BDH,
 															rho0_s,
 															false,
 															true,
-															box_mat,
+															boulder_mat,
 															collition_model);
-	box_ch->SetName("Boulder");
-	box_ch->SetPos(ChVector<>(VWx - BDx - 0.5*BDL, BDy, BDz + 0.5*BDH));
+	boulder_ch->SetPos(ChVector<>(VWx - BDx - 0.5*BDL, BDy, BDz + 0.5*BDH));
 
-	ch_system.AddBody(box_ch);
-	return box_ch;
+	ch_system.AddBody(boulder_ch);
+	return boulder_ch;
 }
 
 void addWallsCh(ChSystem &ch_system)
@@ -81,8 +81,7 @@ void addWallsCh(ChSystem &ch_system)
 																true,
 																tank_mat,
 																collition_model);
-	floor1_ch->SetName("Floor1");
-	floor1_ch->SetPos(ChVector<>(0.5 * VWx, 0.5 * DW, -0.5 * BW));
+	floor1_ch->SetPos(ChVector<>(0.5 * VWx, 0.5 * DW, -(0.5 * BW)));
 	floor1_ch->SetBodyFixed(true);
 	ch_system.AddBody(floor1_ch);
 
@@ -95,7 +94,6 @@ void addWallsCh(ChSystem &ch_system)
 																true,
 																tank_mat,
 																collition_model);
-	floor2_ch->SetName("Floor2");
 	floor2_ch->SetPos(ChVector<>(0.5*(DL + VWx), 0.5 * DW, VWH - 0.5*BW));
 	floor2_ch->SetBodyFixed(true);
 	ch_system.AddBody(floor2_ch);
@@ -103,14 +101,13 @@ void addWallsCh(ChSystem &ch_system)
 	auto verical_wall_ch = chrono_types
 		::make_shared<ChBodyEasyBox>(	BW,
 										DW,
-										VWH,
+										VWH - BW,
 										rho0_s,
 										false,
 										true,
 										tank_mat,
 										collition_model);
-	verical_wall_ch->SetName("Cliff");
-	verical_wall_ch->SetPos(ChVector<>(VWx + BW*0.5, DW * 0.5, VWH*0.5 - BW));
+	verical_wall_ch->SetPos(ChVector<>(VWx + 0.5*BW, 0.5 * DW, 0.5*(VWH - BW)));
 	verical_wall_ch->SetBodyFixed(true);
 	ch_system.AddBody(verical_wall_ch);
 	return;
@@ -124,10 +121,10 @@ public:
 	{
 		// // tank shape outer shape
 		Vec3d outer_dims(DL + 2.0*BW, DW + 2.0*BW, DH + 2.0*BW);
-		Vec3d outer_pos(0.5*DL, 0.5*DW, 0.5*DH);
+		Vec3d outer_pos(0.5 * DL, 0.5 * DW, 0.5 * DH);
 		// // Remove parts at the right part of the cliff
 		Vec3d linner_dims(VWx, DW, DH);
-		Vec3d linner_pos(0.5*VWx, 0.5*DW, 0.5*DH);
+		Vec3d linner_pos(0.5 * VWx, 0.5 * DW, 0.5 * DH);
 		// // Remove parts above cliff
 		Vec3d rinner_dims(DL - VWx, DW, DH - VWH);
 		Vec3d rinner_pos(0.5*(DL + VWx), 0.5*DW, VWH + 0.5*(DH - VWH));

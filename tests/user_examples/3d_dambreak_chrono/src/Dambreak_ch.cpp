@@ -81,8 +81,7 @@ int main()
 
 	fcout << "Setting up Chrono..." << std::flush;
 	SystemCh ch_system;
-	GlobalStaticVariables::physical_time_ = 0.0;
-	
+	ch_system.SetCollisionSystemType(collision_type);
 	auto boulder_ch = addBoulderCh(ch_system);
 	addWallsCh(ch_system);
 
@@ -111,6 +110,7 @@ int main()
 	boulder_particles.initializeNormalDirectionFromBodyShape();
 	boulder_corrected_configuration.parallel_exec();
 
+	GlobalStaticVariables::physical_time_ = 0.0;
 	size_t number_of_iterations = 0;
 	Real dt = 0.001;
 	Real end_time = 2.0;
