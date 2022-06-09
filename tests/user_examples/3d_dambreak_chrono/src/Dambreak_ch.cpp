@@ -163,7 +163,10 @@ int main()
 			}
 
 			if (number_of_iterations % restart_write_steps == 0) {
+				tick_count t2 = tick_count::now();
 				restart_io.writeToFile(number_of_iterations);
+				tick_count t3 = tick_count::now();
+				interval += t3 - t2;
 			}
 
 			number_of_iterations++;
