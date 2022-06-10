@@ -2,7 +2,6 @@
 
 #define ENABLE_WATER 1
 
-using std::flush;
 
 int main()
 {
@@ -11,7 +10,7 @@ int main()
 
 	// Parameters for simulation
 	GlobalStaticVariables::physical_time_ = 0.0;
-	system.restart_step_ = 500;
+	system.restart_step_ = 0;
 	size_t number_of_iterations = system.restart_step_;
 	Real dt = 0.001;
 	const Real end_time = 2.0;
