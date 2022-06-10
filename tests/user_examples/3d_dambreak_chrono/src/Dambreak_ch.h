@@ -46,7 +46,6 @@ const Real Youngs_modulus = 73e9;						/**< Young's modulus [Pa]. */
 const int resolution = 0;
 
 const float friction_coef = 0.2f;
-const auto collision_type = chrono::collision::ChCollisionSystemType::BULLET;
 
 std::shared_ptr<ChBody> addBoulderCh(ChSystem &ch_system)
 {

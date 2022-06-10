@@ -14,7 +14,11 @@ option(BUILD_WITH_SIMBODY "BUILD_WITH_SIMBODY" 0)
 option(EMSCRIPTEN "EMSCRIPTEN" 0)
 option(BUILD_SPHINXSYS_TESTS "BUILD_SPHINXSYS_TESTS" 1)
 
-set(Chrono_DIR "$ENV{CHRONO_HOME}/lib/cmake")
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(Chrono_DIR "$ENV{CHRONO_HOME}/lib/cmake/")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    set(Chrono_DIR "$ENV{CHRONO_HOME}/cmake/")
+endif()
 find_package(Chrono CONFIG)
 include_directories(${CHRONO_INCLUDE_DIRS})
 

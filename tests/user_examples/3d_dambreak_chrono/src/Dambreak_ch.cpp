@@ -61,21 +61,23 @@ int main()
 	// CombinedInteractionDynamics viscous_acceleration_and_transport_correction(viscous_acceleration, transport_velocity_correction);
 #endif //ENABLE_WATER
 
-	fcout << "Setting up Chrono..." << std::flush;
+	fcout << "Setting up Chrono" << endl;
 	ChSystemNSC ch_system;
-	ch_system.SetCollisionSystemType(collision_type);
 	auto boulder_ch = addBoulderCh(ch_system);
 	addWallsCh(ch_system);
+	fcout << "Bodies added!" << endl;
 
+	fcout << "Creating forces" << endl;
 	// Set up the force and torque objects
 	auto force_ch = chrono_types::make_shared<ChForce>();
 	auto torque_ch = chrono_types::make_shared<ChForce>();
 	force_ch->SetMode(ChForce::ForceType::FORCE);
 	torque_ch->SetMode(ChForce::ForceType::TORQUE);
-	force_ch->SetVrelpoint(ChVector<>(.0, .0, .0));
-	torque_ch->SetVrelpoint(ChVector<>(.0, .0, .0));
+	fcout << "SetMode finished!" << endl;
 	boulder_ch->AddForce(force_ch);
 	boulder_ch->AddForce(torque_ch);
+	fcout << "Forces added to the body!" << endl;
+	force_ch->SetVrelpoint(ChVector<>(.0, .0, .0));
 
 	ch_system.SetTimestepperType(ChTimestepper::Type::EULER_IMPLICIT_LINEARIZED);
 	ch_system.SetSolverType(ChSolver::Type::PSOR);
@@ -86,7 +88,7 @@ int main()
 	ConstrainSolidBodyPartByChrono boulder_constain(boulder, boulder_for_chrono, boulder_ch);
 	TotalForceOnSolidBodyPartForChrono force_on_boulder(boulder, boulder_for_chrono, boulder_ch, ch_system);
 
-	fcout << "OK!" << endl;
+	fcout << "Chrono Setup Finished!" << endl;
 
 	// Output system
 	In_Output in_output(system);

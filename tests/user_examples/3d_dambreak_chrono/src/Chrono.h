@@ -1,9 +1,16 @@
 #pragma once
 #include "sphinxsys.h"
 
+#ifdef min
+#undef min
+#endif
+
+#ifdef max
+#undef max
+#endif
+
 #include "chrono/physics/ChBody.h"
 #include "chrono/physics/ChBodyEasy.h"
-
 #include "chrono/physics/ChSystemNSC.h"
 
 namespace SPH 
