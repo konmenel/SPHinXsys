@@ -117,10 +117,14 @@ int main()
 	/** If the starting time is not zero, please setup the restart time step or read in restart states. */
 	if (system.restart_step_ != 0)
 	{
+		fcout << "Loading from restart files..." << endl;
 		GlobalStaticVariables::physical_time_ = restart_io.readRestartFiles(system.restart_step_);
 		restart_io.readFromFile(system.restart_step_);
 		water_block.updateCellLinkedList();
 		water_block_complex.updateConfiguration();
+		fcout << "Loading successful!\n"
+			<< "Step=" << system.restart_step_
+			<< "\tTime=" << GlobalStaticVariables::physical_time_ << endl;
 	}
 
 
