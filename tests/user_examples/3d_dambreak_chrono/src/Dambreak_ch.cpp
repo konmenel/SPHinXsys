@@ -118,6 +118,7 @@ int main()
 	if (system.restart_step_ != 0)
 	{
 		GlobalStaticVariables::physical_time_ = restart_io.readRestartFiles(system.restart_step_);
+		restart_io.readFromFile(system.restart_step_);
 		water_block.updateCellLinkedList();
 		water_block_complex.updateConfiguration();
 	}
@@ -168,10 +169,10 @@ int main()
 			}
 
 			if (number_of_iterations % report_steps == 0) {
-				fcout << "Step = " << number_of_iterations << "\tReal time = " << 
-				GlobalStaticVariables::physical_time_ << endl;
-				fcout << "force vec = " << force_ch->GetForce() <<
-						"\tforce modulus = " << force_ch->GetForceMod() << endl;
+				fcout << "Step=" << number_of_iterations
+				<< "\tTime=" << GlobalStaticVariables::physical_time_
+				<< "\nforce_vec=" << force_ch->GetForce()
+				<< "\tforce_modulus=" << force_ch->GetForceMod() << endl;
 			}
 
 			if (number_of_iterations % restart_write_steps == 0) {

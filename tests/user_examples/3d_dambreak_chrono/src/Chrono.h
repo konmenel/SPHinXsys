@@ -45,14 +45,14 @@ namespace SPH
 										std::shared_ptr<ChBody> ch_body)
 			: ConstrainSolidBodyRegion(solid_body, body_part), ch_body_(ch_body)
 			{
-				initial_body_origin_location_ = vecToSim(ch_body->GetPos());
+				initial_frame_loc_ = vecToSim(ch_body->GetPos());
 			}
 			
 		virtual ~ConstrainSolidBodyPartByChrono(){};
 
 	protected:
 		std::shared_ptr<ChBody> ch_body_;
-		Vec3d initial_body_origin_location_;
+		Vec3d initial_frame_loc_;
 
 		virtual void setupDynamics(Real dt = 0.0) override 
 		{
@@ -61,22 +61,23 @@ namespace SPH
 
 		virtual void Update(size_t index_i, Real dt = 0.0) override 
 		{
-			Vec3d rr;
-			ChVector<> pos, vel, acc;
+			ChVector<> rpos, pos, vel, acc;
 			Quaternion rot;
-			rr = pos_0_[index_i] - initial_body_origin_location_;
+			rpos = vecToCh(pos_0_[index_i] - initial_frame_loc_);	// Position with respect to local frame
 
-			ChVector<> rr_ch = vecToCh(rr);
-			
-			pos = ch_body_->GetPos(); 								// Translation of origin
-			vel = ch_body_->PointSpeedLocalToParent(rr_ch); 		// Velocity of origin
-			acc = ch_body_->PointAccelerationLocalToParent(rr_ch); 	// Velocity of point
+			pos = ch_body_->GetPos(); 								// Translation of local frame
+			vel = ch_body_->PointSpeedLocalToParent(rpos); 			// Velocity of local frame
+			acc = ch_body_->PointAccelerationLocalToParent(rpos); 	// Velocity of local frame
 			rot = ch_body_->GetRot();								// Rotation of local frame
 
-			pos_n_[index_i] = vecToSim(pos) + rr;
+			pos_n_[index_i] = vecToSim(pos + rot.Rotate(rpos));
 			vel_n_[index_i] = vecToSim(vel);
 			dvel_dt_[index_i] = vecToSim(acc);
-			n_[index_i] = vecToSim(rot.Rotate(vecToCh(n_0_[index_i])));
+			n_[index_i] = vecToSim(
+				rot.Rotate(
+					vecToCh(n_0_[index_i])
+				)
+			);
 		}
 	};
 
@@ -98,7 +99,10 @@ namespace SPH
 		: PartDynamicsByParticleReduce<SimTK::SpatialVec, ReduceSum<SimTK::SpatialVec>>(solid_body, body_part),
 		solid_dynamics::SolidDataSimple(solid_body),
 		force_from_fluid_(particles_->force_from_fluid_), contact_force_(particles_->contact_force_),
-		pos_n_(particles_->pos_n_), ch_system_(ch_system), ch_body_(ch_body) {}
+		pos_n_(particles_->pos_n_), ch_system_(ch_system), ch_body_(ch_body) 
+		{
+			initial_reference_ = SimTK::SpatialVec(Vec3d(0), Vec3d(0));
+		}
 		
 		virtual ~TotalForceOnSolidBodyPartForChrono(){};
 
@@ -108,7 +112,7 @@ namespace SPH
 		std::shared_ptr<ChBody> ch_body_;
 		ChVector<> current_mobod_origin_location_;
 
-		virtual void setupDynamics(Real dt = 0.0) override
+		virtual void SetupReduce() override
 		{
 			current_mobod_origin_location_ = ch_body_->GetPos();
 		}
@@ -116,11 +120,11 @@ namespace SPH
 		virtual SimTK::SpatialVec ReduceFunction(size_t index_i, Real dt = 0.0) override
 		{
 			// Calculate force
-			Vecd force_from_particle = force_from_fluid_[index_i] + contact_force_[index_i];
+			Vec3d force_from_particle = force_from_fluid_[index_i] + contact_force_[index_i];
 			
 			// Calculate torque
-			Vecd displacement = pos_n_[index_i] - vecToSim(current_mobod_origin_location_);
-			Vecd torque_from_particle = cross(displacement, force_from_particle);
+			Vec3d displacement = pos_n_[index_i] - vecToSim(current_mobod_origin_location_);
+			Vec3d torque_from_particle = cross(displacement, force_from_particle);
 
 			return SimTK::SpatialVec(torque_from_particle, force_from_particle);
 		}
