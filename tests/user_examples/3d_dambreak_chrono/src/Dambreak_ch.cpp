@@ -8,8 +8,18 @@ int main()
 {
 	SPHSystem system(system_domain_bounds, resolution_ref);
 	LogOutput fcout("Run.out");
-	GlobalStaticVariables::physical_time_ = 0.0;
 
+	// Parameters for simulation
+	GlobalStaticVariables::physical_time_ = 0.0;
+	system.restart_step_ = 500;
+	size_t number_of_iterations = system.restart_step_;
+	Real dt = 0.001;
+	const Real end_time = 2.0;
+	const Real out_dt = 0.01;
+	const size_t report_steps = 100;
+	const size_t restart_write_steps = 500;
+
+	// Creating the bodies.
 #if ENABLE_WATER
 	//the water block
 	WaterBlock water_block(system, "WaterBody");
@@ -90,7 +100,9 @@ int main()
 
 	fcout << "Chrono Setup Finished!" << endl;
 
-	// Output system
+	// Output system setup
+	// Restart step should be set before the instanciation of In_Output because the
+	// restart folder is deleted if restart set is 0!.
 	In_Output in_output(system);
 	RestartIO restart_io(in_output, system.real_bodies_);
 	BodyStatesRecordingToLegacyVtk write_body_states(in_output, system.real_bodies_);
@@ -105,15 +117,6 @@ int main()
 	boulder_particles.initializeNormalDirectionFromBodyShape();
 	boulder_corrected_configuration.parallel_exec();
 
-	GlobalStaticVariables::physical_time_ = 0.0;
-	system.restart_step_ = 500;
-	size_t number_of_iterations = system.restart_step_;
-	Real dt = 0.001;
-	const Real end_time = 2.0;
-	const Real out_dt = 0.01;
-	const size_t report_steps = 100;
-	const size_t restart_write_steps = 500;
-
 	/** If the starting time is not zero, please setup the restart time step or read in restart states. */
 	if (system.restart_step_ != 0)
 	{
@@ -127,12 +130,11 @@ int main()
 			<< "\tTime=" << GlobalStaticVariables::physical_time_ << endl;
 	}
 
+	fcout << "Main loop started..." << endl;
 
 	//statistics for computing time
 	tick_count t1 = tick_count::now();
 	tick_count::interval_t interval;
-
-	fcout << "Main loop started..." << endl;
 	while (GlobalStaticVariables::physical_time_ < end_time) {
 		Real integration_time = GlobalStaticVariables::physical_time_
 			- ((int) (GlobalStaticVariables::physical_time_ / out_dt)) * out_dt;
