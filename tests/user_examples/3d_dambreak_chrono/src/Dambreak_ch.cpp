@@ -10,13 +10,13 @@ int main()
 
 	// Parameters for simulation
 	GlobalStaticVariables::physical_time_ = 0.0;
+	Real &sim_time = GlobalStaticVariables::physical_time_;
 	system.restart_step_ = 0;
 	size_t number_of_iterations = system.restart_step_;
 	Real dt = 0.001;
 	const Real end_time = 2.0;
 	const Real out_dt = 0.01;
 	const size_t report_steps = 100;
-	const size_t restart_write_steps = 100;		// Frequent write to get just before contact
 	const size_t min_restart_write_step = 500;	// Contact should occur after this step
 	const size_t max_restart_write_step = 800;	// Contact should occure by this step
 
@@ -122,13 +122,13 @@ int main()
 	if (system.restart_step_ != 0)
 	{
 		fcout << "Loading from restart files..." << endl;
-		GlobalStaticVariables::physical_time_ = restart_io.readRestartFiles(system.restart_step_);
+		sim_time = restart_io.readRestartFiles(system.restart_step_);
 		restart_io.readFromFile(system.restart_step_);
 		water_block.updateCellLinkedList();
 		water_block_complex.updateConfiguration();
 		fcout << "Loading successful!\n"
 			<< "Step=" << system.restart_step_
-			<< "\tTime=" << GlobalStaticVariables::physical_time_ << endl;
+			<< "\tTime=" << sim_time << endl;
 	}
 
 	fcout << "Main loop started..." << endl;
@@ -136,9 +136,8 @@ int main()
 	//statistics for computing time
 	tick_count t1 = tick_count::now();
 	tick_count::interval_t interval;
-	while (GlobalStaticVariables::physical_time_ < end_time) {
-		Real integration_time = GlobalStaticVariables::physical_time_
-			- ((int) (GlobalStaticVariables::physical_time_ / out_dt)) * out_dt;
+	while (sim_time < end_time) {
+		Real integration_time = 0.0;
 		while (integration_time < out_dt) {
 #if ENABLE_WATER
 			// acceleration due to viscous force and gravity
@@ -173,24 +172,14 @@ int main()
 				
 				integration_time += dt;
 				relaxation_time += dt;
-				GlobalStaticVariables::physical_time_ += dt;
+				sim_time += dt;
 			}
 
 			if (number_of_iterations % report_steps == 0) {
 				fcout << "Step=" << number_of_iterations
-				<< "\tTime=" << GlobalStaticVariables::physical_time_
+				<< "\tTime=" << sim_time
 				<< "\nforce_vec=" << force_ch->GetForce()
 				<< "\tforce_modulus=" << force_ch->GetForceMod() << endl;
-			}
-
-			if (	number_of_iterations < max_restart_write_step
-				&& 	number_of_iterations > min_restart_write_step
-				&& 	number_of_iterations % restart_write_steps == 0)
-			{
-				tick_count t2 = tick_count::now();
-				restart_io.writeToFile(number_of_iterations);
-				tick_count t3 = tick_count::now();
-				interval += t3 - t2;
 			}
 
 			number_of_iterations++;
@@ -203,6 +192,13 @@ int main()
 
 		tick_count t2 = tick_count::now();
 		write_body_states.writeToFile(number_of_iterations);
+
+		if (	number_of_iterations < max_restart_write_step
+			&& 	number_of_iterations > min_restart_write_step)
+		{
+			restart_io.writeToFile(number_of_iterations);
+		}
+
 		tick_count t3 = tick_count::now();
 		interval += t3 - t2;
 	}
