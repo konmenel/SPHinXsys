@@ -16,7 +16,9 @@ int main()
 	const Real end_time = 2.0;
 	const Real out_dt = 0.01;
 	const size_t report_steps = 100;
-	const size_t restart_write_steps = 500;
+	const size_t restart_write_steps = 100;		// Frequent write to get just before contact
+	const size_t min_restart_write_step = 500;	// Contact should occur after this step
+	const size_t max_restart_write_step = 800;	// Contact should occure by this step
 
 	// Creating the bodies.
 #if ENABLE_WATER
@@ -181,7 +183,10 @@ int main()
 				<< "\tforce_modulus=" << force_ch->GetForceMod() << endl;
 			}
 
-			if (number_of_iterations % restart_write_steps == 0) {
+			if (	number_of_iterations < max_restart_write_step
+				&& 	number_of_iterations > min_restart_write_step
+				&& 	number_of_iterations % restart_write_steps == 0)
+			{
 				tick_count t2 = tick_count::now();
 				restart_io.writeToFile(number_of_iterations);
 				tick_count t3 = tick_count::now();
