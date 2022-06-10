@@ -106,7 +106,7 @@ int main()
 	boulder_corrected_configuration.parallel_exec();
 
 	GlobalStaticVariables::physical_time_ = 0.0;
-	system.restart_step_ = 0;
+	system.restart_step_ = 500;
 	size_t number_of_iterations = system.restart_step_;
 	Real dt = 0.001;
 	const Real end_time = 2.0;
@@ -130,7 +130,8 @@ int main()
 
 	fcout << "Main loop started..." << endl;
 	while (GlobalStaticVariables::physical_time_ < end_time) {
-		Real integration_time = 0.0;
+		Real integration_time = GlobalStaticVariables::physical_time_
+			- ((int) (GlobalStaticVariables::physical_time_ / out_dt)) * out_dt;
 		while (integration_time < out_dt) {
 #if ENABLE_WATER
 			// acceleration due to viscous force and gravity
