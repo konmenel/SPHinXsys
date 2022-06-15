@@ -3,7 +3,7 @@
 #define ENABLE_WATER 1
 
 
-int main()
+int main(int argc, char *argv[])
 {
 	SPHSystem system(system_domain_bounds, resolution_ref);
 	LogOutput fcout("Run.out");
@@ -123,7 +123,6 @@ int main()
 	{
 		fcout << "Loading from restart files..." << endl;
 		sim_time = restart_io.readRestartFiles(system.restart_step_);
-		restart_io.readFromFile(system.restart_step_);
 		water_block.updateCellLinkedList();
 		water_block_complex.updateConfiguration();
 		fcout << "Loading successful!\n"
