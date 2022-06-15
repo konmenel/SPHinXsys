@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
 	const Real out_dt = 0.01;
 	const size_t report_steps = 100;
 	const size_t min_restart_write_step = 500;	// Contact should occur after this step
-	const size_t max_restart_write_step = 800;	// Contact should occure by this step
+	const size_t max_restart_write_step = 600;	// Contact should occure by this step
 
 	// Creating the bodies.
 #if ENABLE_WATER
@@ -105,7 +105,10 @@ int main(int argc, char *argv[])
 	// Restart step should be set before the instanciation of In_Output because the
 	// restart folder is deleted if restart set is 0!.
 	In_Output in_output(system);
-	RestartIO restart_io(in_output, system.real_bodies_);
+	// Temporary fix since operator>> for SimTK::Mat is not
+	// implemented (file Mat.h)
+	RestartIO restart_io(in_output, 
+				SPHBodyVector(system.real_bodies_.begin(), system.real_bodies_.end()-1));
 	BodyStatesRecordingToLegacyVtk write_body_states(in_output, system.real_bodies_);
 	write_body_states.writeToFile(0);
 
