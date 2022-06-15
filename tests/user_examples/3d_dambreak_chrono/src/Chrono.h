@@ -19,6 +19,7 @@ namespace SPH
 	using chrono::ChSystemNSC;
 	using chrono::ChVector;
 	using chrono::Quaternion;
+	using chrono::ChFrameMoving;
 	using chrono::ChBody;
 	using chrono::ChBodyEasyBox;
 	using chrono::ChMaterialSurfaceNSC;
@@ -63,21 +64,23 @@ namespace SPH
 		{
 			ChVector<> rpos, pos, vel, acc;
 			Quaternion rot;
+			
+			// Can calculate this once for all particle in constuctor and
+			// store as attribute. Increase speed in exchange for memory.
 			rpos = vecToCh(pos_0_[index_i] - initial_frame_loc_);	// Position with respect to local frame
 
-			pos = ch_body_->GetPos(); 								// Translation of local frame
+			pos = ch_body_->TransformDirectionLocalToParent(rpos); 	// Translation of local frame
 			vel = ch_body_->PointSpeedLocalToParent(rpos); 			// Velocity of local frame
 			acc = ch_body_->PointAccelerationLocalToParent(rpos); 	// Velocity of local frame
-			rot = ch_body_->GetRot();								// Rotation of local frame
 
-			pos_n_[index_i] = vecToSim(pos + rot.Rotate(rpos));
+			pos_n_[index_i] = vecToSim(pos);
 			vel_n_[index_i] = vecToSim(vel);
 			dvel_dt_[index_i] = vecToSim(acc);
-			n_[index_i] = vecToSim(
-				rot.Rotate(
-					vecToCh(n_0_[index_i])
-				)
-			);
+
+			// TODO: finish this! Get position, speed and acceleration.
+			// ChFrameMoving<> rel_frame(rpos, Quaternion(1, 0, 0, 0));
+			// ChFrameMoving<> abs_frame;
+			// ch_body_->TransformLocalToParent(rel_frame, abs_frame);
 		}
 	};
 
@@ -119,6 +122,7 @@ namespace SPH
 
 		virtual SimTK::SpatialVec ReduceFunction(size_t index_i, Real dt = 0.0) override
 		{
+			// TODO: Maybe try accumulate total force each timestep (remember to clear though)
 			// Calculate force
 			Vec3d force_from_particle = force_from_fluid_[index_i] + contact_force_[index_i];
 			

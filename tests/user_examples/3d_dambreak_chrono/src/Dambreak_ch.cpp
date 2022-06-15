@@ -11,7 +11,7 @@ int main()
 	// Parameters for simulation
 	GlobalStaticVariables::physical_time_ = 0.0;
 	Real &sim_time = GlobalStaticVariables::physical_time_;
-	system.restart_step_ = 0;
+	system.restart_step_ = 511;
 	size_t number_of_iterations = system.restart_step_;
 	Real dt = 0.001;
 	const Real end_time = 2.0;
@@ -161,12 +161,15 @@ int main()
 				dt = SMIN(dt, Dt - relaxation_time);
 #endif // ENABLE_WATER
 				SimTK::SpatialVec torque_force = force_on_boulder.parallel_exec();
-				torque_ch->SetDir(vecToCh(torque_force[0]));
-				force_ch->SetDir(vecToCh(torque_force[1]));
-				torque_ch->SetMforce(torque_force[0].norm());
-				force_ch->SetMforce(torque_force[1].norm());
-				// boulder_ch->Accumulate_torque(vecToCh(torque_force[0]), false);
-				// boulder_ch->Accumulate_force(vecToCh(torque_force[1]), ChVector<>(0.0, 0.0, 0.0), false);
+				// SetDir maybe need to have unit length
+				// Try again Accumulate_force/torque but with the final force/torque
+				// torque_ch->SetDir(vecToCh(torque_force[0]));
+				// force_ch->SetDir(vecToCh(torque_force[1]));
+				// torque_ch->SetMforce(torque_force[0].norm());
+				// force_ch->SetMforce(torque_force[1].norm());
+				boulder_ch->Empty_forces_accumulators();
+				boulder_ch->Accumulate_torque(vecToCh(torque_force[0]), false);
+				boulder_ch->Accumulate_force(vecToCh(torque_force[1]), boulder_ch->GetPos(), false);
 				ch_system.DoStepDynamics(dt);
 				boulder_constain.parallel_exec();
 				
@@ -178,8 +181,7 @@ int main()
 			if (number_of_iterations % report_steps == 0) {
 				fcout << "Step=" << number_of_iterations
 				<< "\tTime=" << sim_time
-				<< "\nforce_vec=" << force_ch->GetForce()
-				<< "\tforce_modulus=" << force_ch->GetForceMod() << endl;
+				<< "\nForce_vec=" << boulder_ch->Get_accumulated_force() << endl;
 			}
 
 			number_of_iterations++;
