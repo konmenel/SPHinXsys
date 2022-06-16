@@ -244,7 +244,6 @@ namespace SPH
 		// operator>> is not implemented for SimTK::Mat so we need deferent way to parse the data.
 		void operator()(std::string &variable_name, StdLargeVec<Mat2d> &variable) const
 		{
-			std::cout  << "Specialization Mat2d called!" << std::endl;
 			SimTK::Xml::element_iterator ele_ite = xml_engine_.root_element_.element_begin();
 			for (size_t i = 0; i != total_real_particles_; ++i)
 			{
@@ -259,7 +258,6 @@ namespace SPH
 
 		void operator()(std::string &variable_name, StdLargeVec<Mat3d> &variable) const
 		{
-			std::cout  << "Specialization Mat3d called!" << std::endl;
 			SimTK::Xml::element_iterator ele_ite = xml_engine_.root_element_.element_begin();
 			for (size_t i = 0; i != total_real_particles_; ++i)
 			{
