@@ -72,15 +72,16 @@ namespace SPH
 			pos = ch_body_->TransformDirectionLocalToParent(rpos); 	// Translation of local frame
 			vel = ch_body_->PointSpeedLocalToParent(rpos); 			// Velocity of local frame
 			acc = ch_body_->PointAccelerationLocalToParent(rpos); 	// Velocity of local frame
+			rot = ch_body_->GetRot();
 
 			pos_n_[index_i] = vecToSim(pos);
 			vel_n_[index_i] = vecToSim(vel);
 			dvel_dt_[index_i] = vecToSim(acc);
-
-			// TODO: finish this! Get position, speed and acceleration.
-			// ChFrameMoving<> rel_frame(rpos, Quaternion(1, 0, 0, 0));
-			// ChFrameMoving<> abs_frame;
-			// ch_body_->TransformLocalToParent(rel_frame, abs_frame);
+			n_[index_i] = vecToSim(
+				rot.Rotate(
+					vecToCh(n_0_[index_i])
+				)
+			);
 		}
 	};
 
