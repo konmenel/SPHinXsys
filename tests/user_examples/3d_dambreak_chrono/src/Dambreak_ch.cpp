@@ -45,6 +45,7 @@ int main(int argc, char *argv[])
 	BodyRelationInner boulder_inner(boulder);
 #if ENABLE_WATER
 	ComplexBodyRelation water_block_complex(water_block, {&wall_boundary, &boulder});
+	BodyRelationContact boulder_fluid_contact(boulder, { &water_block });
 #endif //ENABLE_WATER
 
 	solid_dynamics::CorrectConfiguration boulder_corrected_configuration(boulder_inner);
@@ -65,15 +66,24 @@ int main(int argc, char *argv[])
 	fluid_dynamics::AcousticTimeStepSize get_fluid_time_step_size(water_block);
 
 	//pressure relaxation using verlet time stepping
-	fluid_dynamics::PressureRelaxationWithWall pressure_relaxation(water_block_complex);
-	fluid_dynamics::DensityRelaxationWithWall density_relaxation(water_block_complex);
+	fluid_dynamics::PressureRelaxationRiemannWithWall pressure_relaxation(water_block_complex);
+	fluid_dynamics::DensityRelaxationRiemannWithWall density_relaxation(water_block_complex);
 	/** Computing viscous acceleration. */
 	fluid_dynamics::ViscousAccelerationWithWall viscous_acceleration(water_block_complex);
 	/** Impose transport velocity. */
 	// fluid_dynamics::TransportVelocityCorrectionComplex transport_velocity_correction(water_block_complex);
 	/** viscous acceleration and transport velocity correction can be combined because they are independent dynamics. */
 	// CombinedInteractionDynamics viscous_acceleration_and_transport_correction(viscous_acceleration, transport_velocity_correction);
+	
+	// Fluid-solid contact forces
+	solid_dynamics::FluidPressureForceOnSolid fluid_pressure_force_on_boulder(boulder_fluid_contact);
+	solid_dynamics::FluidViscousForceOnSolid fluid_viscous_force_on_boulder(boulder_fluid_contact);
 #endif //ENABLE_WATER
+
+	// Average velocity and acceleration on boulder
+	solid_dynamics::AverageVelocityAndAcceleration	average_velocity_and_acceleration(boulder);
+	solid_dynamics::UpdateElasticNormalDirection 	boulder_update_normal(boulder);
+	
 
 	fcout << "Setting up Chrono" << endl;
 	ChSystemNSC ch_system;
@@ -108,10 +118,12 @@ int main(int argc, char *argv[])
 	// Restart step should be set before the instanciation of In_Output because the
 	// restart folder is deleted if restart set is 0!.
 	In_Output in_output(system);
+	
 	// Temporary fix since operator>> for SimTK::Mat is not
 	// implemented (file Mat.h)
 	RestartIO restart_io(in_output, 
 				SPHBodyVector(system.real_bodies_.begin(), system.real_bodies_.end()-1));
+	
 	BodyStatesRecordingToLegacyVtk write_body_states(in_output, system.real_bodies_);
 	write_body_states.writeToFile(0);
 
@@ -153,18 +165,26 @@ int main(int argc, char *argv[])
 			viscous_acceleration.parallel_exec();
 			// transport_velocity_correction.parallel_exec();
 			// viscous_acceleration_and_transport_correction.parallel_exec();
+
+			fluid_viscous_force_on_boulder.parallel_exec();
 #else
 			Real Dt = 0.005;
 #endif // ENABLE_WATER
+			boulder_update_normal.parallel_exec();
 
 			Real relaxation_time = 0.0;
 			while (relaxation_time < Dt) {
 #if ENABLE_WATER
-				pressure_relaxation.parallel_exec(dt);
-				density_relaxation.parallel_exec(dt);
 				dt = get_fluid_time_step_size.parallel_exec();
 				dt = SMIN(dt, Dt - relaxation_time);
+				pressure_relaxation.parallel_exec(dt);
+				fluid_pressure_force_on_boulder.parallel_exec();
+				density_relaxation.parallel_exec(dt);
 #endif // ENABLE_WATER
+
+				// Solid dynamics
+				// average_velocity_and_acceleration.initialize_displacement_.parallel_exec();
+				
 				SimTK::SpatialVec torque_force = force_on_boulder.parallel_exec();
 				// SetDir maybe need to have unit length
 				// Try again Accumulate_force/torque but with the final force/torque
@@ -178,6 +198,9 @@ int main(int argc, char *argv[])
 				ch_system.DoStepDynamics(dt);
 				boulder_constain.parallel_exec();
 				
+				// average_velocity_and_acceleration.update_averages_.parallel_exec(dt);
+
+				// Final step of timestepping, increment times
 				integration_time += dt;
 				relaxation_time += dt;
 				sim_time += dt;
@@ -189,12 +212,15 @@ int main(int argc, char *argv[])
 				<< "\nForce_vec=" << boulder_ch->Get_accumulated_force() << endl;
 			}
 
-			number_of_iterations++;
-
+			wall_boundary.updateCellLinkedList();
+			boulder.updateCellLinkedList();
 #if ENABLE_WATER
 			water_block.updateCellLinkedList();
 			water_block_complex.updateConfiguration();
+			boulder_fluid_contact.updateConfiguration();
 #endif // ENABLE_WATER
+			
+			number_of_iterations++;
 		}
 
 		tick_count t2 = tick_count::now();

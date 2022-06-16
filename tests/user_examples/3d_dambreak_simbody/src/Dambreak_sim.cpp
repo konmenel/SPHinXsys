@@ -6,7 +6,7 @@
 * ---------------------------------------------------------------------------*/
 #include "Dambreak_sim.h"
 
-#define ENABLE_WATER 0
+#define ENABLE_WATER 1
 
 // TODO: Too slow, might be simbody contact.
 
@@ -47,6 +47,7 @@ int main()
 	BodyRelationInner boulder_inner(boulder);
 #if ENABLE_WATER
 	ComplexBodyRelation water_block_complex(water_block, {&wall_boundary, &boulder});
+	BodyRelationContact boulder_fluid_contact(boulder, { &water_block });
 #endif //ENABLE_WATER
 	
 	solid_dynamics::CorrectConfiguration boulder_corrected_configuration(boulder_inner);
@@ -67,15 +68,24 @@ int main()
 	fluid_dynamics::AcousticTimeStepSize get_fluid_time_step_size(water_block);
 
 	//pressure relaxation using verlet time stepping
-	fluid_dynamics::PressureRelaxationWithWall pressure_relaxation(water_block_complex);
-	fluid_dynamics::DensityRelaxationWithWall density_relaxation(water_block_complex);
+	fluid_dynamics::PressureRelaxationRiemannWithWall pressure_relaxation(water_block_complex);
+	fluid_dynamics::DensityRelaxationRiemannWithWall density_relaxation(water_block_complex);
 	/** Computing viscous acceleration. */
 	fluid_dynamics::ViscousAccelerationWithWall viscous_acceleration(water_block_complex);
 	/** Impose transport velocity. */
 	// fluid_dynamics::TransportVelocityCorrectionComplex transport_velocity_correction(water_block_complex);
 	/** viscous acceleration and transport velocity correction can be combined because they are independent dynamics. */
 	// CombinedInteractionDynamics viscous_acceleration_and_transport_correction(viscous_acceleration, transport_velocity_correction);
+
+	// Fluid-solid contact forces
+	solid_dynamics::FluidPressureForceOnSolid fluid_pressure_force_on_boulder(boulder_fluid_contact);
+	solid_dynamics::FluidViscousForceOnSolid fluid_viscous_force_on_boulder(boulder_fluid_contact);
 #endif //ENABLE_WATER
+	
+	// Average velocity and acceleration on boulder
+	solid_dynamics::AverageVelocityAndAcceleration	average_velocity_and_acceleration(boulder);
+	solid_dynamics::UpdateElasticNormalDirection 	boulder_update_normal(boulder);
+	
 
 	fcout << "Simbody starting..." << endl;
 	// ----------------------------------------------------------------------------
@@ -190,28 +200,39 @@ int main()
 			viscous_acceleration.parallel_exec();
 			// transport_velocity_correction.parallel_exec();
 			// viscous_acceleration_and_transport_correction.parallel_exec();
+
+			fluid_viscous_force_on_boulder.parallel_exec();
 #else
 			Real Dt = 0.005;
 #endif // ENABLE_WATER
+			boulder_update_normal.parallel_exec();
 
 			Real relaxation_time = 0.0;
 			while (relaxation_time < Dt)
 			{
 #if ENABLE_WATER
-				pressure_relaxation.parallel_exec(dt);
-				density_relaxation.parallel_exec(dt);
 				dt = get_fluid_time_step_size.parallel_exec();
 				dt = SMIN(dt, Dt - relaxation_time);
+				
+				pressure_relaxation.parallel_exec(dt);
+				fluid_pressure_force_on_boulder.parallel_exec();
+				density_relaxation.parallel_exec(dt);
 #else
 				dt = 0.0002;
 #endif // ENABLE_WATER
 
+				// Solid dynamics
+				average_velocity_and_acceleration.initialize_displacement_.parallel_exec();
+				
 				SimTK::State& state_for_update = integ.updAdvancedState();
 				force_on_bodies.clearAllBodyForces(state_for_update);
 				force_on_bodies.setOneBodyForce(state_for_update, boulder_body, force_on_boulder.parallel_exec());
 				integ.stepBy(dt);
 				constraint_boulder.parallel_exec();
+				
+				average_velocity_and_acceleration.update_averages_.parallel_exec(dt);
 
+				// Final step of timestepping, increment times
 				relaxation_time += dt;
 				integration_time += dt;
 				GlobalStaticVariables::physical_time_ += dt;
@@ -224,12 +245,15 @@ int main()
 						  << "	dt = " << dt << endl;
 			}
 			
-			number_of_iterations++;
-
+			wall_boundary.updateCellLinkedList();
+			boulder.updateCellLinkedList();
 #if ENABLE_WATER
 			water_block.updateCellLinkedList();
 			water_block_complex.updateConfiguration();
+			boulder_fluid_contact.updateConfiguration();
 #endif // ENABLE_WATER
+
+			number_of_iterations++;
 		}
 
 
