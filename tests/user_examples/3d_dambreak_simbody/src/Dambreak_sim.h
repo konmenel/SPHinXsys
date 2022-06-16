@@ -56,7 +56,7 @@ const Real fVis = 0.0; //0.02; // to turn off viscous friction
 const SimTK::ContactMaterial contact_material(fK, fDis, fFac, fFac, fVis);
 
 //	resolution which controls the quality of created polygonalmesh
-const int resolution = 10;
+const int resolution = 0;
 
 static void createBrickMesh(const Vecd hf, SimTK::PolygonalMesh &brick)
 {
@@ -220,7 +220,7 @@ public:
 		Vecd halfsize(0.5 * BDL, 0.5 * BDW, 0.5 * BDH);
 		Vecd translation_wall(VWx - BDx - 0.5*BDL, BDy, BDz + 0.5*BDH);
 		
-		body_shape_.add<TriangleMeshShapeBrick>(halfsize, 0, translation_wall);
+		body_shape_.add<TriangleMeshShapeBrick>(halfsize, resolution, translation_wall);
 	}
 };
 
