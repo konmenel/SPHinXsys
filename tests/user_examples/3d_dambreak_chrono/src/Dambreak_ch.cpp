@@ -8,10 +8,13 @@ int main(int argc, char *argv[])
 	SPHSystem system(system_domain_bounds, resolution_ref);
 	LogOutput fcout("Run.out");
 
+#ifdef BOOST_AVAILABLE
+	system.handleCommandlineOptions(argc, argv);
+#endif
+
 	// Parameters for simulation
 	GlobalStaticVariables::physical_time_ = 0.0;
 	Real &sim_time = GlobalStaticVariables::physical_time_;
-	system.restart_step_ = 511;
 	size_t number_of_iterations = system.restart_step_;
 	Real dt = 0.001;
 	const Real end_time = 2.0;
