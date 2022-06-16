@@ -258,7 +258,7 @@ int main()
 
 
 		tick_count t2 = tick_count::now();
-		write_water_block_states.writeToFile();
+		write_water_block_states.writeToFile(number_of_iterations);
 		tick_count t3 = tick_count::now();
 		interval += t3 - t2;
 	}
