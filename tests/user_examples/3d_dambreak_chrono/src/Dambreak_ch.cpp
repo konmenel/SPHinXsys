@@ -12,6 +12,8 @@ int main(int argc, char *argv[])
 	system.handleCommandlineOptions(argc, argv);
 #endif
 
+	system.restart_step_ = 512;
+
 	// Parameters for simulation
 	GlobalStaticVariables::physical_time_ = 0.0;
 	Real &sim_time = GlobalStaticVariables::physical_time_;
@@ -115,12 +117,9 @@ int main(int argc, char *argv[])
 	fcout << "Chrono Setup Finished!" << endl;
 
 	// Output system setup
+	In_Output in_output(system);
 	// Restart step should be set before the instanciation of In_Output because the
 	// restart folder is deleted if restart set is 0!.
-	In_Output in_output(system);
-	
-	// Temporary fix since operator>> for SimTK::Mat is not
-	// implemented (file Mat.h)
 	RestartIO restart_io(in_output, system.real_bodies_);
 	
 	BodyStatesRecordingToLegacyVtk write_body_states(in_output, system.real_bodies_);

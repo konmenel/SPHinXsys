@@ -241,6 +241,37 @@ namespace SPH
 		ReadAParticleVariableFromXml(XmlEngine &xml_engine, size_t &total_real_particles)
 			: xml_engine_(xml_engine), total_real_particles_(total_real_particles){};
 
+		// operator>> is not implemented for SimTK::Mat so we need deferent way to parse the data.
+		void operator()(std::string &variable_name, StdLargeVec<Mat2d> &variable) const
+		{
+			std::cout  << "Specialization Mat2d called!" << std::endl;
+			SimTK::Xml::element_iterator ele_ite = xml_engine_.root_element_.element_begin();
+			for (size_t i = 0; i != total_real_particles_; ++i)
+			{
+				SimTK::Vec<4,Real> temp;
+				xml_engine_.getRequiredAttributeValue(ele_ite, variable_name, temp);
+				// Unsafe since it is assumed that the pointer points to an array of
+				// right size but works.
+				variable[i] = SimTK::Mat<2,2,Real>(&temp[0]);
+				ele_ite++;
+			}
+		}
+
+		void operator()(std::string &variable_name, StdLargeVec<Mat3d> &variable) const
+		{
+			std::cout  << "Specialization Mat3d called!" << std::endl;
+			SimTK::Xml::element_iterator ele_ite = xml_engine_.root_element_.element_begin();
+			for (size_t i = 0; i != total_real_particles_; ++i)
+			{
+				SimTK::Vec<9,Real> temp;
+				xml_engine_.getRequiredAttributeValue(ele_ite, variable_name, temp);
+				// Unsafe since it is assumed that the pointer points to an array of
+				// right size but works.
+				variable[i] = SimTK::Mat<3,3,Real>(&temp[0]);
+				ele_ite++;
+			}
+		}
+
 		template <typename VariableType>
 		void operator()(std::string &variable_name, StdLargeVec<VariableType> &variable) const;
 	};
