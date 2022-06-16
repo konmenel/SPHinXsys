@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
 	/** If the starting time is not zero, please setup the restart time step or read in restart states. */
 	if (system.restart_step_ != 0)
 	{
-		fcout << "Loading from restart files..." << endl;
+		fcout << "Reading from restart files..." << endl;
 		sim_time = restart_io.readRestartFiles(system.restart_step_);
 			wall_boundary.updateCellLinkedList();
 			boulder.updateCellLinkedList();
@@ -146,7 +146,8 @@ int main(int argc, char *argv[])
 			water_block_complex.updateConfiguration();
 			boulder_fluid_contact.updateConfiguration();
 #endif // ENABLE_WATER
-		fcout << "Loading successful!\n"
+		fcout << "Reading successful!\n"
+			<< "Continuing from:\n"
 			<< "Step=" << system.restart_step_
 			<< "\tTime=" << sim_time << endl;
 	}
