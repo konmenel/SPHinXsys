@@ -69,12 +69,12 @@ namespace SPH
 			// store as attribute. Increase speed in exchange for memory.
 			rpos = vecToCh(pos_0_[index_i] - initial_frame_loc_);	// Position with respect to local frame
 
-			pos = ch_body_->TransformDirectionLocalToParent(rpos); 	// Translation of local frame
+			pos = ch_body_->GetPos(); 								// Get position of center of mass
 			vel = ch_body_->PointSpeedLocalToParent(rpos); 			// Velocity of local frame
 			acc = ch_body_->PointAccelerationLocalToParent(rpos); 	// Velocity of local frame
 			rot = ch_body_->GetRot();
 
-			pos_n_[index_i] = vecToSim(pos);
+			pos_n_[index_i] = vecToSim(pos + rot.Rotate(rpos));
 			vel_n_[index_i] = vecToSim(vel);
 			dvel_dt_[index_i] = vecToSim(acc);
 			n_[index_i] = vecToSim(
@@ -111,14 +111,14 @@ namespace SPH
 		virtual ~TotalForceOnSolidBodyPartForChrono(){};
 
 	protected:
-		StdLargeVec<Vecd> &force_from_fluid_, &contact_force_, &pos_n_;
+		StdLargeVec<Vec3d> &force_from_fluid_, &contact_force_, &pos_n_;
 		ChSystem &ch_system_;
 		std::shared_ptr<ChBody> ch_body_;
-		ChVector<> current_mobod_origin_location_;
+		Vec3d current_mobod_origin_location_;
 
 		virtual void SetupReduce() override
 		{
-			current_mobod_origin_location_ = ch_body_->GetPos();
+			current_mobod_origin_location_ = vecToSim(ch_body_->GetPos());
 		}
 
 		virtual SimTK::SpatialVec ReduceFunction(size_t index_i, Real dt = 0.0) override
@@ -128,7 +128,7 @@ namespace SPH
 			Vec3d force_from_particle = force_from_fluid_[index_i] + contact_force_[index_i];
 			
 			// Calculate torque
-			Vec3d displacement = pos_n_[index_i] - vecToSim(current_mobod_origin_location_);
+			Vec3d displacement = pos_n_[index_i] - current_mobod_origin_location_;
 			Vec3d torque_from_particle = cross(displacement, force_from_particle);
 
 			return SimTK::SpatialVec(torque_from_particle, force_from_particle);

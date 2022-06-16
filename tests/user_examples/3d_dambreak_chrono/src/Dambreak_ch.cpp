@@ -1,6 +1,6 @@
 #include "Dambreak_ch.h"
 
-#define ENABLE_WATER 1
+#define ENABLE_WATER
 
 
 int main(int argc, char *argv[])
@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 	const size_t max_restart_write_step = 600;	// Contact should occure by this step
 
 	// Creating the bodies.
-#if ENABLE_WATER
+#ifdef ENABLE_WATER
 	//the water block
 	WaterBlock water_block(system, "WaterBody");
 	// create fluid particles
@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 
 	/** topology */
 	BodyRelationInner boulder_inner(boulder);
-#if ENABLE_WATER
+#ifdef ENABLE_WATER
 	ComplexBodyRelation water_block_complex(water_block, {&wall_boundary, &boulder});
 	BodyRelationContact boulder_fluid_contact(boulder, { &water_block });
 #endif //ENABLE_WATER
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 	//-------------------------------------------------------------------
 	//-------- common particle dynamics ----------------------------------------
 	Gravity gravity(Vec3d(0.0, 0.0, -gravity_g));
-#if ENABLE_WATER
+#ifdef ENABLE_WATER
 	TimeStepInitialization initialize_a_fluid_step(water_block, gravity);
 	//-------- fluid dynamics --------------------------------------------------
 	//evaluation of density by summation approach
@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 #endif //ENABLE_WATER
 
 	// Average velocity and acceleration on boulder
-	solid_dynamics::AverageVelocityAndAcceleration	average_velocity_and_acceleration(boulder);
+	// solid_dynamics::AverageVelocityAndAcceleration	average_velocity_and_acceleration(boulder);
 	solid_dynamics::UpdateElasticNormalDirection 	boulder_update_normal(boulder);
 	
 
@@ -91,17 +91,17 @@ int main(int argc, char *argv[])
 	addWallsCh(ch_system);
 	fcout << "Bodies added!" << endl;
 
-	fcout << "Creating forces" << endl;
-	// Set up the force and torque objects
-	auto force_ch = chrono_types::make_shared<ChForce>();
-	auto torque_ch = chrono_types::make_shared<ChForce>();
-	force_ch->SetMode(ChForce::ForceType::FORCE);
-	torque_ch->SetMode(ChForce::ForceType::TORQUE);
-	fcout << "SetMode finished!" << endl;
-	boulder_ch->AddForce(force_ch);
-	boulder_ch->AddForce(torque_ch);
-	fcout << "Forces added to the body!" << endl;
-	force_ch->SetVrelpoint(ChVector<>(.0, .0, .0));
+	// fcout << "Creating forces" << endl;
+	// // Set up the force and torque objects
+	// auto force_ch = chrono_types::make_shared<ChForce>();
+	// auto torque_ch = chrono_types::make_shared<ChForce>();
+	// force_ch->SetMode(ChForce::ForceType::FORCE);
+	// torque_ch->SetMode(ChForce::ForceType::TORQUE);
+	// fcout << "SetMode finished!" << endl;
+	// boulder_ch->AddForce(force_ch);
+	// boulder_ch->AddForce(torque_ch);
+	// fcout << "Forces added to the body!" << endl;
+	// force_ch->SetVrelpoint(ChVector<>(.0, .0, .0));
 
 	ch_system.SetTimestepperType(ChTimestepper::Type::EULER_IMPLICIT_LINEARIZED);
 	ch_system.SetSolverType(ChSolver::Type::PSOR);
@@ -121,8 +121,7 @@ int main(int argc, char *argv[])
 	
 	// Temporary fix since operator>> for SimTK::Mat is not
 	// implemented (file Mat.h)
-	RestartIO restart_io(in_output, 
-				SPHBodyVector(system.real_bodies_.begin(), system.real_bodies_.end()-1));
+	RestartIO restart_io(in_output, system.real_bodies_);
 	
 	BodyStatesRecordingToLegacyVtk write_body_states(in_output, system.real_bodies_);
 	write_body_states.writeToFile(0);
@@ -141,8 +140,13 @@ int main(int argc, char *argv[])
 	{
 		fcout << "Loading from restart files..." << endl;
 		sim_time = restart_io.readRestartFiles(system.restart_step_);
-		water_block.updateCellLinkedList();
-		water_block_complex.updateConfiguration();
+			wall_boundary.updateCellLinkedList();
+			boulder.updateCellLinkedList();
+#ifdef ENABLE_WATER
+			water_block.updateCellLinkedList();
+			water_block_complex.updateConfiguration();
+			boulder_fluid_contact.updateConfiguration();
+#endif // ENABLE_WATER
 		fcout << "Loading successful!\n"
 			<< "Step=" << system.restart_step_
 			<< "\tTime=" << sim_time << endl;
@@ -156,7 +160,7 @@ int main(int argc, char *argv[])
 	while (sim_time < end_time) {
 		Real integration_time = 0.0;
 		while (integration_time < out_dt) {
-#if ENABLE_WATER
+#ifdef ENABLE_WATER
 			// acceleration due to viscous force and gravity
 			initialize_a_fluid_step.parallel_exec();
 			Real Dt = get_fluid_advection_time_step_size.parallel_exec();
@@ -174,7 +178,7 @@ int main(int argc, char *argv[])
 
 			Real relaxation_time = 0.0;
 			while (relaxation_time < Dt) {
-#if ENABLE_WATER
+#ifdef ENABLE_WATER
 				dt = get_fluid_time_step_size.parallel_exec();
 				dt = SMIN(dt, Dt - relaxation_time);
 				pressure_relaxation.parallel_exec(dt);
@@ -214,7 +218,7 @@ int main(int argc, char *argv[])
 
 			wall_boundary.updateCellLinkedList();
 			boulder.updateCellLinkedList();
-#if ENABLE_WATER
+#ifdef ENABLE_WATER
 			water_block.updateCellLinkedList();
 			water_block_complex.updateConfiguration();
 			boulder_fluid_contact.updateConfiguration();
