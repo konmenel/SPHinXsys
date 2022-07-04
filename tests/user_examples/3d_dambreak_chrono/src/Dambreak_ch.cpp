@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
 	system.handleCommandlineOptions(argc, argv);
 #endif
 
-	system.restart_step_ = 512;
+	system.restart_step_ = 0;
 
 	// Parameters for simulation
 	GlobalStaticVariables::physical_time_ = 0.0;
