@@ -93,18 +93,6 @@ int main(int argc, char *argv[])
 	addWallsCh(ch_system);
 	fcout << "Bodies added!" << endl;
 
-	// fcout << "Creating forces" << endl;
-	// // Set up the force and torque objects
-	// auto force_ch = chrono_types::make_shared<ChForce>();
-	// auto torque_ch = chrono_types::make_shared<ChForce>();
-	// force_ch->SetMode(ChForce::ForceType::FORCE);
-	// torque_ch->SetMode(ChForce::ForceType::TORQUE);
-	// fcout << "SetMode finished!" << endl;
-	// boulder_ch->AddForce(force_ch);
-	// boulder_ch->AddForce(torque_ch);
-	// fcout << "Forces added to the body!" << endl;
-	// force_ch->SetVrelpoint(ChVector<>(.0, .0, .0));
-
 	ch_system.SetTimestepperType(ChTimestepper::Type::EULER_IMPLICIT_LINEARIZED);
 	ch_system.SetSolverType(ChSolver::Type::PSOR);
 	ch_system.SetSolverMaxIterations(50);
@@ -166,7 +154,7 @@ int main(int argc, char *argv[])
 			Real Dt = get_fluid_advection_time_step_size.parallel_exec();
 			Dt = SMIN(Dt, out_dt - integration_time);
 			update_density_by_summation.parallel_exec();
-			viscous_acceleration.parallel_exec();
+			// viscous_acceleration.parallel_exec();
 			// transport_velocity_correction.parallel_exec();
 			// viscous_acceleration_and_transport_correction.parallel_exec();
 
@@ -190,12 +178,6 @@ int main(int argc, char *argv[])
 				// average_velocity_and_acceleration.initialize_displacement_.parallel_exec();
 				
 				SimTK::SpatialVec torque_force = force_on_boulder.parallel_exec();
-				// SetDir maybe need to have unit length
-				// Try again Accumulate_force/torque but with the final force/torque
-				// torque_ch->SetDir(vecToCh(torque_force[0]));
-				// force_ch->SetDir(vecToCh(torque_force[1]));
-				// torque_ch->SetMforce(torque_force[0].norm());
-				// force_ch->SetMforce(torque_force[1].norm());
 				boulder_ch->Empty_forces_accumulators();
 				boulder_ch->Accumulate_torque(vecToCh(torque_force[0]), false);
 				boulder_ch->Accumulate_force(vecToCh(torque_force[1]), boulder_ch->GetPos(), false);
