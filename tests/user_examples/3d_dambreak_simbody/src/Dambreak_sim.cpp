@@ -11,17 +11,30 @@
 // TODO: Too slow, might be simbody contact.
 
 //the main program
-int main()
+int main(int argc, char *argv[])
 {
 
 	//build up context -- a SPHSystem
 	SPHSystem system(system_domain_bounds, resolution_ref);
 	LogOutput fcout("Run.out");
 
+#ifdef BOOST_AVAILABLE
+	system.handleCommandlineOptions(argc, argv);
+#endif
+
 	/** Set the starting time. */
 	GlobalStaticVariables::physical_time_ = 0.0;
 	/** Tag for computation from restart files. 0: not from restart files. */
 	system.restart_step_ = 0;
+
+	Real &sim_time = GlobalStaticVariables::physical_time_;
+	size_t number_of_iterations = system.restart_step_;
+	Real dt = 0.001;
+	const Real end_time = 2.0;
+	const Real out_dt = 0.01;
+	const size_t report_steps = 100;
+	const size_t min_restart_write_step = 500;	// Contact should occur after this step
+	const size_t max_restart_write_step = 600;	// Contact should occure by this step
 
 #if ENABLE_WATER
 	//the water block
@@ -170,13 +183,23 @@ int main()
 	/** Output the start states of bodies. */
 	write_water_block_states.writeToFile(0);
 
-	size_t number_of_iterations = system.restart_step_;
-	int screen_output_interval = 250;
-	int restart_output_interval = screen_output_interval * 10;
-	Real End_Time = 5.0;
-	//time step size for output file
-	Real D_Time = 0.01;
-	Real dt = 0.001; //default acoustic time step sizes
+	/** If the starting time is not zero, please setup the restart time step or read in restart states. */
+	if (system.restart_step_ != 0)
+	{
+		fcout << "Reading from restart files..." << endl;
+		sim_time = restart_io.readRestartFiles(system.restart_step_);
+			wall_boundary.updateCellLinkedList();
+			boulder.updateCellLinkedList();
+#ifdef ENABLE_WATER
+			water_block.updateCellLinkedList();
+			water_block_complex.updateConfiguration();
+			boulder_fluid_contact.updateConfiguration();
+#endif // ENABLE_WATER
+		fcout << "Reading successful!\n"
+			<< "Continuing from:\n"
+			<< "Step=" << system.restart_step_
+			<< "\tTime=" << sim_time << endl;
+	}
 
 	//statistics for computing time
 	tick_count t1 = tick_count::now();
@@ -184,20 +207,20 @@ int main()
 
 	fcout << "Start time stepping..." << endl;
 	//computation loop starts
-	while (GlobalStaticVariables::physical_time_ < End_Time)
+	while (sim_time < end_time)
 	{
 		Real integration_time = 0.0;
 		//integrate time (loop) until the next output time
-		while (integration_time < D_Time)
+		while (integration_time < out_dt)
 		{
 
 #if ENABLE_WATER
 			// acceleration due to viscous force and gravity
 			initialize_a_fluid_step.parallel_exec();
 			Real Dt = get_fluid_advection_time_step_size.parallel_exec();
-			Dt = SMIN(Dt, D_Time - integration_time);
+			Dt = SMIN(Dt, out_dt - integration_time);
 			update_density_by_summation.parallel_exec();
-			viscous_acceleration.parallel_exec();
+			// viscous_acceleration.parallel_exec();
 			// transport_velocity_correction.parallel_exec();
 			// viscous_acceleration_and_transport_correction.parallel_exec();
 
@@ -235,13 +258,13 @@ int main()
 				// Final step of timestepping, increment times
 				relaxation_time += dt;
 				integration_time += dt;
-				GlobalStaticVariables::physical_time_ += dt;
+				sim_time += dt;
 			}
 
-			if (number_of_iterations % screen_output_interval == 0)
+			if (number_of_iterations % report_steps == 0)
 			{
 				fcout << std::fixed << std::setprecision(9) << "N=" << number_of_iterations << "	Time = "
-						  << GlobalStaticVariables::physical_time_
+						  << sim_time
 						  << "	dt = " << dt << endl;
 			}
 			
@@ -259,6 +282,13 @@ int main()
 
 		tick_count t2 = tick_count::now();
 		write_water_block_states.writeToFile(number_of_iterations);
+
+		if (	number_of_iterations < max_restart_write_step
+			&& 	number_of_iterations > min_restart_write_step)
+		{
+			restart_io.writeToFile(number_of_iterations);
+		}
+
 		tick_count t3 = tick_count::now();
 		interval += t3 - t2;
 	}

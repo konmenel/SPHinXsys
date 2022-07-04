@@ -6,26 +6,22 @@
 using namespace SPH;
 
 //for geometry
-const Real resolution_ref = 3.75e-3;	  	//particle spacing
+const Real resolution_ref = 3.75e-3;	//particle spacing
 const Real BW = resolution_ref * 4; 	//boundary width
-const Real DL = 4.0;			  		//tank length
+const Real DL = 12.0;			  		//tank length
 const Real DH = 0.5;				  	//tank height
 const Real DW = 0.3;				  	//tank width
-const Real LL = 1.5;				  	//liquid length
-const Real LH = 0.2;				  	//liquid height
+const Real LL = 3.0;				  	//liquid length
+const Real LH = 0.4;				  	//liquid height
 const Real LW = 0.3;				  	//liquid width
 const Real BDL = 3.0e-2;				//boulder length
 const Real BDH = 1.5e-2;				//boulder height
 const Real BDW = 2.0e-2;				//boulder width
-const Real VWx = 2.0;					//verical wall x position
+const Real VWx = 7.0;					//verical wall x position
 const Real VWH = 0.2;					//verical wall height
-const Real BDx = 0.08;				  	//boulder x position
+const Real BDx = 0.06;				  	//boulder x position
 const Real BDy = DW * 0.5;				//boulder y position
-const Real BDz = 0.05;				  	//boulder z position
-
-// x="0.9" y="0.24" z="0"
-// x="0.12" y="0.12" z="0.45" 
-
+const Real BDz = 0.0;				  	//boulder z position
 
 /** Domain bounds of the system. */
 BoundingBox system_domain_bounds(Vecd(-BW, -BW, -BW), Vecd(DL + BW, DW + BW, DH + BW));
