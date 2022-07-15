@@ -803,4 +803,61 @@ namespace SPH
 		}
 	}
 	//=================================================================================================//
+	void BaseParticles::writeStateToH5(HF::Group &parent)
+	{
+		// We write from pointers to avoid copying data. Can be dangerous but it's efficient.
+
+		// Write integers
+		for (std::pair<std::string, size_t>& name_index : variables_to_restart_[indexInteger])
+		{
+			std::string variable_name = name_index.first;
+			StdLargeVec<int>& variable = *(std::get<indexInteger>(all_particle_data_)[name_index.second]);
+			std::vector<size_t> dims{total_real_particles_};
+
+			HF::DataSet dataset = parent.createDataSet<int>(variable_name, HF::DataSpace(dims));
+			dataset.write(&variable[0]);
+		}
+
+		// Write scalars
+		for (std::pair<std::string, size_t>& name_index : variables_to_restart_[indexScalar])
+		{
+			std::string variable_name = name_index.first;
+			StdLargeVec<Real>& variable = *(std::get<indexScalar>(all_particle_data_)[name_index.second]);
+			std::vector<size_t> dims{total_real_particles_};
+
+			HF::DataSet dataset = parent.createDataSet<Real>(variable_name, HF::DataSpace(dims));
+			dataset.write(&variable[0]);
+		}
+
+
+		// Write vectors
+		// Note: SimTK::Vec are tightly packed. There are no virtual functions so we can treat it as a
+		// C-style 2D array.
+		for (std::pair<std::string, size_t>& name_index : variables_to_restart_[indexVector])
+		{
+			std::string variable_name = name_index.first;
+			StdLargeVec<Vecd> &variable = *(std::get<indexVector>(all_particle_data_)[name_index.second]);
+			std::vector<size_t> dims{total_real_particles_,
+									 static_cast<size_t>(Vecd::size())};
+
+			HF::DataSet dataset = parent.createDataSet<Real>(variable_name, HF::DataSpace(dims));
+			dataset.write(reinterpret_cast<double**>(&variable[0][0]));
+		}
+
+		// Write matrix
+		// Note: Similarly to SimTK::Vec, SimTK::Mat are also tightly packed so they can also be treated as
+		// C-style multidimensional array.
+		for (std::pair<std::string, size_t>& name_index : variables_to_restart_[indexMatrix])
+		{
+			std::string variable_name = name_index.first;
+			StdLargeVec<Matd> &variable = *(std::get<indexMatrix>(all_particle_data_)[name_index.second]);
+			std::vector<size_t> dims{total_real_particles_, 
+									 static_cast<size_t>(Matd::nrow()),
+									 static_cast<size_t>(Matd::ncol())};
+
+			HF::DataSet dataset = parent.createDataSet<Real>(variable_name, HF::DataSpace(dims));
+			dataset.write(reinterpret_cast<double***>(&variable[0][0][0]));
+		}
+	}
+	//=================================================================================================//
 }

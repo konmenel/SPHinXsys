@@ -228,11 +228,11 @@ namespace SPH
 	{
 	protected:
 		In_Output &in_output_;
-		SimTK::RungeKuttaMersonIntegrator &integ_;
+		SimTK::Integrator &integ_;
 		MobilizedBodyType &mobody_;
 
 	public:
-		SimBodyStatesIO(In_Output &in_output, SimTK::RungeKuttaMersonIntegrator &integ, MobilizedBodyType &mobody)
+		SimBodyStatesIO(In_Output &in_output, SimTK::Integrator &integ, MobilizedBodyType &mobody)
 			: in_output_(in_output), integ_(integ), mobody_(mobody){};
 		virtual ~SimBodyStatesIO(){};
 	};
@@ -245,7 +245,7 @@ namespace SPH
 	class WriteSimBodyStates : public SimBodyStatesIO<MobilizedBodyType>
 	{
 	public:
-		WriteSimBodyStates(In_Output &in_output, SimTK::RungeKuttaMersonIntegrator &integ, MobilizedBodyType &mobody)
+		WriteSimBodyStates(In_Output &in_output, SimTK::Integrator &integ, MobilizedBodyType &mobody)
 			: SimBodyStatesIO<MobilizedBodyType>(in_output, integ, mobody){};
 		virtual ~WriteSimBodyStates(){};
 
@@ -635,11 +635,11 @@ namespace SPH
 		std::string filefullpath_;
 
 	public:
-		WriteSimBodyPinData(In_Output &in_output, SimTK::RungeKuttaMersonIntegrator &integ, SimTK::MobilizedBody::Pin &pinbody);
+		WriteSimBodyPinData(In_Output &in_output, SimTK::Integrator &integ, SimTK::MobilizedBody::Pin &pinbody);
 		virtual ~WriteSimBodyPinData(){};
 		virtual void writeToFile(size_t iteration_step = 0) override;
 	};
-
+	
 	/**
 	 * @class WriteSimBodyFreeData
 	* @brief Position and velocity of Free MobilizedBody.
@@ -652,11 +652,11 @@ namespace SPH
 
 	public:
 		WriteSimBodyFreeData(In_Output &in_output,
-							 SimTK::RungeKuttaMersonIntegrator &integ,
+							 SimTK::Integrator &integ,
 							 SimTK::MobilizedBody::Free &freebody,
 							 SimTK::MultibodySystem &mb_system);
-		virtual ~WriteSimBodyFreeData(){};
-		virtual void writeToFile(size_t iteration_step = 0) override;
+		virtual ~WriteSimBodyFreeData(){}
+		virtual void writeToFile(const size_t iteration_step = 0) override;
 	};
 
 	/**

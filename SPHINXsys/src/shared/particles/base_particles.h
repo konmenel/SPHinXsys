@@ -37,10 +37,13 @@
 #include "xml_engine.h"
 #include "endianness.h"
 
+#include "H5File.hpp"
+
 #include <fstream>
 
 namespace SPH
 {
+	namespace HF = HighFive;
 
 	class SPHBody;
 	class ParticleGenerator;
@@ -174,6 +177,8 @@ namespace SPH
 		void writeParticlesToPltFile(std::ofstream &output_file);
 		/** Write only surface particle data in VTU format for Paraview. TODO: this should be generalized for body part by particles */
 		virtual void writeSurfaceParticlesToVtuFile(std::ofstream& output_file, BodySurface& surface_particles);
+		
+		virtual void writeStateToH5(HF::Group &parent);
 
 		void resizeXmlDocForParticles(XmlEngine &xml_engine);
 		void writeParticlesToXmlForRestart(std::string &filefullpath);

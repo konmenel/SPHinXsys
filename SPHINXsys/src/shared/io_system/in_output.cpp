@@ -462,7 +462,7 @@ namespace SPH
 	}
 	//=============================================================================================//
 	WriteSimBodyPinData::
-		WriteSimBodyPinData(In_Output &in_output, SimTK::RungeKuttaMersonIntegrator &integ, SimTK::MobilizedBody::Pin &pinbody)
+		WriteSimBodyPinData(In_Output &in_output, SimTK::Integrator &integ, SimTK::MobilizedBody::Pin &pinbody)
 		: WriteSimBodyStates<SimTK::MobilizedBody::Pin>(in_output, integ, pinbody),
 		filefullpath_(in_output_.output_folder_ + "/mb_pinbody_data.dat")
 	{
@@ -495,7 +495,7 @@ namespace SPH
 	//=============================================================================================//
 	WriteSimBodyFreeData::
 		WriteSimBodyFreeData(In_Output &in_output,
-							 SimTK::RungeKuttaMersonIntegrator &integ,
+							 SimTK::Integrator &integ,
 							 SimTK::MobilizedBody::Free &pinbody,
 							 SimTK::MultibodySystem &mb_system)
 		: WriteSimBodyStates<SimTK::MobilizedBody::Free>(in_output, integ, pinbody),
@@ -503,50 +503,80 @@ namespace SPH
 		mb_system_(mb_system)
 	{
 		std::ofstream out_file(filefullpath_.c_str(), std::ios::app);
-
-		out_file << "\"time\""
-				 << "   ";
-		out_file << "  "
-				 << "x"
-				 << " ";
-		out_file << "  "
-				 << "y"
-				 << " ";
-		out_file << "  "
-				 << "z"
-				 << " ";
-		out_file << "  "
-				 << "vel_x"
-				 << " ";
-		out_file << "  "
-				 << "vel_y"
-				 << " ";
-		out_file << "  "
-				 << "vel_z"
-				 << " ";
-		out_file << "\n";
+		// header
+		out_file << "#THE UNITS PRESENTED BELOW ARE JUST FOR REFERENCE. THE TRUE UNITS ARE " 
+				 << "DEPENDENT ON THE UNITS USED TO SET UP THE SIMULATION\n";
+		
+		out_file << "time [s], "
+				 << "COM.x [m], "
+				 << "COM.y [m], "
+				 << "COM.z [m], "
+				 << "vel.x [m/s], "
+				 << "vel.y [m/s], "
+				 << "vel.z [m/s], "
+				 << "acc.x [m/s^2], "
+				 << "acc.y [m/s^2], "
+				 << "acc.z [m/s^2], "
+				 << "rot.roll [rad], "
+				 << "rot.pitch [rad], "
+				 << "rot.yaw [rad], "
+				 << "angvel.x [rad/s], "
+				 << "angvel.y [rad/s], "
+				 << "angvel.z [rad/s], "
+				 << "angacc.x [rad/s^2], "
+				 << "angacc.y [rad/s^2], "
+				 << "angacc.z [rad/s^2], "
+				 << "\n";
 
 		out_file.close();
 	};
 	//=============================================================================================//
-	void WriteSimBodyFreeData::writeToFile(size_t iteration_step)
+	void WriteSimBodyFreeData::writeToFile(const size_t iteration_step)
 	{
 		std::ofstream out_file(filefullpath_.c_str(), std::ios::app);
-		out_file << GlobalStaticVariables::physical_time_;
+
 		const SimTK::State &state = integ_.getState();
-		mb_system_.realize(state, SimTK::Stage::Velocity);
+		mb_system_.realize(state, SimTK::Stage::Acceleration);
 
-		SimTK::Vec3 pos = mobody_.getBodyOriginLocation(state);
-		SimTK::Vec3 vel = mobody_.getBodyOriginVelocity(state);
-		out_file << "  " << pos[0]
-				 << "  " << pos[1]
-				 << "  " << pos[2] 
-				 << "  " << vel[0]
-				 << "  " << vel[1] 
-				 << "  " << vel[2] 
-				 << "  ";
+		const SimTK::Vec3 &pos = mobody_.getBodyOriginLocation(state);
+		const SimTK::SpatialVec &vel = mobody_.getBodyVelocity(state);		// < {angularVel, linearVel}
+		const SimTK::SpatialVec &acc = mobody_.getBodyAcceleration(state);  // < {angularAcc, linearAcc}
 
-		out_file << "\n";
+		const SimTK::Rotation &rot = mobody_.getBodyRotation(state);
+		const SimTK::Vec3 angles = rot				// < Vec3(roll, pitch, yaw) 
+			.convertThreeAxesRotationToThreeAngles(
+				SimTK::BodyOrSpaceType::BodyRotationSequence,
+				SimTK::XAxis,
+				SimTK::YAxis,
+				SimTK::ZAxis
+			);
+
+		out_file << GlobalStaticVariables::physical_time_ << ", "
+		
+				 << pos[0] << ", "
+				 << pos[1] << ", "
+				 << pos[2] << ", "
+
+				 << vel[1][0] << ", "
+				 << vel[1][1] << ", "
+				 << vel[1][2] << ", "
+
+				 << acc[1][0] << ", "
+				 << acc[1][1] << ", "
+				 << acc[1][2] << ", "
+
+				 << angles[0] << ", "
+				 << angles[1] << ", "
+				 << angles[2] << ", "
+
+				 << vel[0][0] << ", "
+				 << vel[0][1] << ", "
+				 << vel[0][2] << ", "
+
+				 << acc[0][0] << ", "
+				 << acc[0][1] << ", "
+				 << acc[0][2] << "\n";
+
 		out_file.close();
 	};
 	//=================================================================================================//
