@@ -2,7 +2,7 @@
 # SPHINXSYS V.1.0.0
 #---------------------------------------
 cmake_minimum_required(VERSION 3.16)
-project(SPHINXsys VERSION 1.0.0 LANGUAGES CXX)
+project(SPHINXsys VERSION 1.0.0 LANGUAGES CXX C)
 
 set(SPHINXSYS_PROJECT_DIR ${PROJECT_SOURCE_DIR})
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${SPHINXSYS_PROJECT_DIR}/cmake)
@@ -14,6 +14,7 @@ option(BUILD_WITH_SIMBODY "BUILD_WITH_SIMBODY" 0)
 option(EMSCRIPTEN "EMSCRIPTEN" 0)
 option(BUILD_SPHINXSYS_TESTS "BUILD_SPHINXSYS_TESTS" 1)
 
+# Find Chrono
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(Chrono_DIR "$ENV{CHRONO_HOME}/lib/cmake/")
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
@@ -21,6 +22,15 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
 endif()
 find_package(Chrono CONFIG)
 include_directories(${CHRONO_INCLUDE_DIRS})
+
+# Find HDF5
+find_package(HDF5)
+# set_directory_properties(PROPERTIES INCLUDE_DIRECTORIES "${HDF5_INCLUDE_DIR}")
+include_directories(${HDF5_INCLUDE_DIR})
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/modules/highfive")
+link_libraries(${HDF5_LIBRARIES})
+message(STATUS "HDF5_INCLUDE_DIR: ${HDF5_INCLUDE_DIR}")
+message(STATUS "HDF5_LIBRARY_DIR: ${HDF5_LIBRARIES}")
 
 if(EMSCRIPTEN)
     set(STATIC_BUILD 1)
