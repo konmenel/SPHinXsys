@@ -12,7 +12,6 @@ This script is a template, you can customize the visualization by changing the
 `add_visualization_option` function.
 """
 import os
-import argparse
 import re
 from typing import Dict, List, Optional
 
@@ -94,49 +93,8 @@ def open_files(files_dict: Dict[str, List[str]]) -> dict:
         pvobjects_dict[name] = reader
 
     return pvobjects_dict
-        
-
-# ResetSession()
-
-# view = GetActiveViewOrCreate('RenderView')
-# # wall, building, water, number_of_files = open_files()
-# wall, building, number_of_files = open_files()
-# scene = GetAnimationScene()
-# scene.PlayMode = 'Snap To TimeSteps'
-
-# RenameSource('Wall', wall)
-# RenameSource('Building', building)
-# # RenameSource('WaterBody', water)
-
-# wall_disp = GetDisplayProperties(wall, view)
-# building_disp = GetDisplayProperties(building, view)
-# # water_disp = GetDisplayProperties(water, view)
-
-# # for disp in (wall_disp, building_disp, water_disp):
-# for disp in (wall_disp, building_disp):
-#     disp.SetRepresentationType('Point Gaussian')
-#     disp.GaussianRadius = 0.0045
-
-# Show(wall, view)
-# Show(building, view)
-
-# # display_w = Show(water)
-
-# # ColorBy(display_w, ('POINTS', 'Velocity'), separate=True)
-# # water_color_func = GetColorTransferFunction('Velocity', display_w, separate=True)
-# # water_color_func.ApplyPreset('Jet', True)
-
-# # scene.GoToLast()
-# # scene.GoToPrevious()
-# # water_color_func.RescaleTransferFunctionToDataRange()
-# # scene.GoToFirst()
-
-# # display_w.SetScalarBarVisibility(view, True)
-
-# Render()
 
 
-# TODO: Add the options above for a general case. Perhaps search for `wall` in name.
 def add_visualization_option(pvobjects_dict: dict) -> None:
     """Generic function that add visualization option to paraview
 
