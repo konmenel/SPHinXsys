@@ -7,3 +7,9 @@
 [submodule "3rd_party/wasmtbb"]
 	path = 3rd_party/wasmtbb
 	url = https://github.com/hpcwasm/wasmtbb.git
+[submodule "3rd_party/rapidjson"]
+	path = 3rd_party/rapidjson
+	url = https://github.com/Tencent/rapidjson.git
+[submodule "3rd_party/highfive"]
+	path = 3rd_party/highfive
+	url = https://github.com/BlueBrain/HighFive.git

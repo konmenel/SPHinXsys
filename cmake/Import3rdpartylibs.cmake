@@ -60,3 +60,7 @@ IF(MSVC)
         MESSAGE(FATAL_ERROR "GTest library not found")
     ENDIF(GTest_FOUND)
 ENDIF(MSVC)
+
+include_directories("${SPHINXSYS_PROJECT_DIR}/3rd_party/highfive/include/")
+include_directories("${SPHINXSYS_PROJECT_DIR}/3rd_party/rapidjson/include/")
+add_compile_definitions(RAPIDJSON_HAS_STDSTRING=1)
